@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"debug/buildinfo"
 	"fmt"
 	"log"
 	"os"
@@ -215,6 +216,23 @@ func bundledBinary() string {
 	return ""
 }
 
+// Read the engine version from the daemon shipped with this copy of Masir.
+func bundledAmneziaWGVersion() string {
+	info, err := buildinfo.ReadFile(bundledBinary())
+	if err != nil {
+		return ""
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == "github.com/amnezia-vpn/amneziawg-go/v3" {
+			if dep.Replace != nil {
+				return dep.Replace.Version
+			}
+			return dep.Version
+		}
+	}
+	return ""
+}
+
 func bundledBinaryPaths() []string {
 	name := "masir"
 	if runtime.GOOS == "windows" {
@@ -319,6 +337,7 @@ func main() {
 	})
 	mygo.App.WhenReady(func() {
 		a.binary = daemonBinary()
+		a.amneziaWGVersion = bundledAmneziaWGVersion()
 		if v := mygo.App.Version(); v != "" { // the bundle's version, which is the app's
 			a.version = v
 		}

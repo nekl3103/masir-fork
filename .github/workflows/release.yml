@@ -10,11 +10,18 @@ permissions:
 
 jobs:
   release:
+    if: github.repository == 'nekl3103/masir-fork'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # the changelog needs history
+      - name: Require a tag from main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::Release tags must point to commits on main"
+            exit 1
+          fi
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.work

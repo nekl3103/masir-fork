@@ -22,13 +22,14 @@ Configure the signing keys from `build/fork-signing/` under
 Keep backups of the private keys. The desktop public key is in
 `apps/masir-gui/mygo.json`.
 
-Push the source to `main`, then push a version tag built from that commit. For a build
-installed as `0.1.8`, the next release can use `v0.1.9`.
+Push the source to `main`, then push a version tag built from that commit. The release
+workflow checks that the tag belongs to `main`. For a build installed as `0.1.9`, the
+next release can use `v0.1.10`.
 
 ```sh
 git push -u origin main
-git tag v0.1.9
-git push origin v0.1.9
+git tag v0.1.10
+git push origin v0.1.10
 ```
 
 The Release workflow publishes the signed assets to **Releases** after the builds

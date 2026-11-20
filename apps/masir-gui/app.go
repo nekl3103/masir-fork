@@ -201,8 +201,9 @@ type app struct {
 	openRuleDialog func(mygo.OpenDialogOptions) ([]string, error)
 	onHeight       func(float32) // tells the window how tall the content is at rest
 
-	version string
-	palette palette // the colors of the frame being built, for helpers that format text
+	version          string
+	amneziaWGVersion string
+	palette          palette // the colors of the frame being built, for helpers that format text
 }
 
 func newApp(d pb.DaemonServiceClient, binary string) *app {

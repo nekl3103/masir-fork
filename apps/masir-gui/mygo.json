@@ -2,7 +2,7 @@
   "name": "Masir",
   "slug": "masir-desktop",
   "identifier": "com.gozargah.masir.desktop",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "urlSchemes": [
     "masir"
   ],

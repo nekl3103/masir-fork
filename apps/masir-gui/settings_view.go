@@ -27,13 +27,18 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 					ui.Row(c).Justify(ui.SpaceBetween).AlignItems(ui.Start).FillWidth().Gap(tw(0.5)).Grow(1).Children(func() {
 						ui.Column(c).Gap(tw(0.2)).Children(func() {
 							label(c, "Masir GUI "+versionLabel(a.version), sizeSubhead, 18, 500, p.text)
-							ui.Link(c, "Github ↗", "https://github.com/Gozargah/Masir").FontSize(10).FixedLineHeight(13).FontWeight(300).TextColor(ui.Hex("#73b0ff"))
+							ui.Link(c, "GitHub · main ↗", "https://github.com/nekl3103/masir-fork/tree/main").FontSize(10).FixedLineHeight(13).FontWeight(300).TextColor(ui.Hex("#73b0ff"))
 						})
 						ui.Column(c).Gap(tw(0.5)).Children(func() {
 							mono(c, "Daemon: "+versionLabel(a.status.GetVersion()), sizeMicro, 13, 400, p.muted).MaxLines(2)
 							mono(c, "xray: v"+a.status.GetXrayVersion(), sizeMicro, 13, 400, p.muted).MaxLines(2)
 						})
 					})
+					if a.amneziaWGVersion != "" {
+						ui.Row(c).FillWidth().Children(func() {
+							mono(c, "Bundled AmneziaWG: "+versionLabel(a.amneziaWGVersion), sizeMicro, 13, 400, p.muted)
+						})
+					}
 					if a.showUpdateControl() {
 						ui.Row(c).FillWidth().Gap(tw(1)).AlignItems(ui.Center).Children(func() {
 							a.updateControl(c, p, true)
