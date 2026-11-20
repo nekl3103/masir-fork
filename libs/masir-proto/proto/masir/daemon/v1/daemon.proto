@@ -155,6 +155,8 @@ message Status {
   // Cumulative traffic bytes per outbound tag since the daemon started, retained across
   // Xray restarts only for this daemon process lifetime.
   repeated OutboundTraffic outbound_traffic = 30;
+  string amneziawg_version = 31; // version linked into the running daemon
+  string distribution = 32;
 }
 
 message GetStatusRequest {}
@@ -370,9 +372,25 @@ message AlterRoutingResponse {}
 message MoveRoutingRequest { string rule_tag = 1; uint32 index = 2; }
 message MoveRoutingResponse {}
 
-message TestRoutingRequest { string domain = 1; string ip = 2; uint32 port = 3; string network = 4; string inbound_tag = 5; }
+message TestRoutingRequest {
+  string domain = 1;
+  string ip = 2;
+  uint32 port = 3;
+  string network = 4;
+  string inbound_tag = 5;
+  bool probe_egress = 6;
+}
 // matched is false when no rule applies and xray falls back to the first outbound.
-message TestRoutingResponse { string outbound_tag = 1; bool matched = 2; }
+message TestRoutingResponse {
+  string outbound_tag = 1;
+  bool matched = 2;
+  string rule_tag = 3;
+  string egress_ip = 4;
+  string egress_error = 5;
+  uint32 http_status = 6;
+  string http_error = 7;
+  string outbound_name = 8;
+}
 
 // inbounds and outbounds: custom ones only; the built-ins come from settings.
 
@@ -422,6 +440,7 @@ message Subscription {
   Usage usage = 10;                          // unset if the provider doesn't report it
   uint32 config_count = 11;
   repeated SubscriptionConfig configs = 12;
+  repeated string sources = 13;
 }
 
 // Traffic and expiry from the provider's subscription-userinfo header.
@@ -474,6 +493,7 @@ message AddSubscriptionRequest {
   string url = 1;
   string name = 2;
   uint32 custom_update_interval_minutes = 3;
+  repeated string sources = 4;
 }
 message AddSubscriptionResponse { Subscription subscription = 1; }
 
@@ -483,6 +503,7 @@ message AlterSubscriptionRequest {
   optional string name = 2;
   optional string url = 3;
   optional uint32 custom_update_interval_minutes = 4;
+  repeated string sources = 5;
 }
 message AlterSubscriptionResponse { Subscription subscription = 1; }
 

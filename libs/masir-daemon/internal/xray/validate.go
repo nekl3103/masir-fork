@@ -15,6 +15,8 @@ import (
 	"github.com/xtls/xray-core/core"
 	routingsession "github.com/xtls/xray-core/features/routing/session"
 	"github.com/xtls/xray-core/infra/conf"
+	vless "github.com/xtls/xray-core/proxy/vless/outbound"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -32,6 +34,7 @@ type RouteQuery struct {
 
 type RouteResult struct {
 	OutboundTag string
+	RuleTag     string
 	Matched     bool // false means no rule matched and Xray falls back to the first outbound
 }
 
@@ -78,13 +81,41 @@ func (c *Core) TestRoute(ctx context.Context, q RouteQuery) (RouteResult, error)
 		}
 		return RouteResult{}, err
 	}
-	return RouteResult{OutboundTag: res.GetOutboundTag(), Matched: true}, nil
+	tag := res.GetRuleTag()
+	if scope, ok := res.(*scopedRoute); ok && scope.outerRuleTag != "" {
+		tag = scope.outerRuleTag
+	}
+	return RouteResult{OutboundTag: res.GetOutboundTag(), RuleTag: tag, Matched: true}, nil
 }
 
 // ValidateOutbound reports whether Xray can build raw as an outbound.
 func ValidateOutbound(raw json.RawMessage) error {
 	_, err := buildOutbound(raw)
 	return err
+}
+
+// OutboundIdentity uses Xray's parsed form to compare different exports of a server.
+func OutboundIdentity(raw json.RawMessage) ([]byte, error) {
+	built, err := buildOutbound(raw)
+	if err != nil {
+		return nil, err
+	}
+	options := proto.MarshalOptions{Deterministic: true}
+	cfg := new(vless.Config)
+	if built.GetProxySettings().GetType() == string(cfg.ProtoReflect().Descriptor().FullName()) {
+		if err := proto.Unmarshal(built.ProxySettings.Value, cfg); err != nil {
+			return nil, err
+		}
+		// 3x-ui's JSON adds account metadata absent from the raw link.
+		if account := cfg.GetVnext().GetUser(); account != nil {
+			account.Level, account.Email = 0, ""
+		}
+		built.ProxySettings.Value, err = options.Marshal(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return options.Marshal(built)
 }
 
 // ValidateInbound reports whether Xray can build raw as an inbound.

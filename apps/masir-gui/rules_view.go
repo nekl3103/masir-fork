@@ -54,6 +54,9 @@ func (a *app) rulesPanel(c *ui.Context, p palette) {
 	count := len(a.ruleList())
 	panelBar(c, p, func() { searchInput(c, "rule-search", &a.ruleQuery, "Search rules...", p) }, func() {
 		ui.Row(c).Gap(tw(1)).AlignItems(ui.Center).Children(func() {
+			if iconButton(c, "route-check", iconGlobe, "Check domain route", p, iconMD, variantSubtle, 12) {
+				a.openPage(routeCheckPath)
+			}
 			if iconButton(c, "rule-add", iconPlus, "Add rule", p, iconMD, variantSubtle, 12) {
 				a.newRule()
 			}

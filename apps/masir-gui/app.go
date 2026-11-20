@@ -104,11 +104,13 @@ type app struct {
 
 	// The add-subscription form.
 	subURL, subName                           string
+	subSources                                []string
 	subCustomInterval                         uint32
 	subBusy                                   bool
 	subError                                  string
 	importHeight                              float32
 	importHeader, importContent, importFooter ui.Handle
+	routeCheck                                routeCheckState
 
 	// Settings form.
 	portText     string // digits only; synced from the daemon when not editing
@@ -201,9 +203,8 @@ type app struct {
 	openRuleDialog func(mygo.OpenDialogOptions) ([]string, error)
 	onHeight       func(float32) // tells the window how tall the content is at rest
 
-	version          string
-	amneziaWGVersion string
-	palette          palette // the colors of the frame being built, for helpers that format text
+	version string
+	palette palette // the colors of the frame being built, for helpers that format text
 }
 
 func newApp(d pb.DaemonServiceClient, binary string) *app {

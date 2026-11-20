@@ -258,18 +258,24 @@ func (a *app) refreshSubscription(id string) {
 
 func (a *app) addSubscription() {
 	url, name, interval := strings.TrimSpace(a.subURL), strings.TrimSpace(a.subName), a.subCustomInterval
-	if url == "" || a.subBusy {
+	links := sourceURLs(url, a.subSources)
+	if len(links) == 0 || a.subBusy {
 		return
 	}
 	a.subBusy, a.subError = true, ""
 	a.async(func() {
 		ctx, cancel := rpc()
 		defer cancel()
-		res, err := a.d.AddSubscription(ctx, &pb.AddSubscriptionRequest{
-			Url:                         url,
+		req := &pb.AddSubscriptionRequest{
 			Name:                        name,
 			CustomUpdateIntervalMinutes: interval,
-		})
+		}
+		if len(links) == 1 {
+			req.Url = links[0]
+		} else {
+			req.Sources = links
+		}
+		res, err := a.d.AddSubscription(ctx, req)
 		a.post(func() {
 			a.subBusy = false
 			if err != nil {
@@ -286,6 +292,7 @@ func (a *app) addSubscription() {
 			}
 			a.notifySuccess(msg)
 			a.subURL, a.subName, a.subCustomInterval = "", "", 0
+			a.subSources = nil
 			a.query = ""
 			a.open = sectionServers
 			if newSubID != "" {

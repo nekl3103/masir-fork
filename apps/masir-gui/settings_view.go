@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/egoist/mygo/ui"
 )
@@ -13,10 +14,17 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 		ui.Column(c).Padding(pageInset, tw(4), 0, tw(4)).Shrink(0).Children(func() {
 			a.pageHeader(c, p, "Settings")
 		})
-		ui.Row(c).Padding(0, tw(4), tw(2), tw(4)).Gap(tw(2)).AlignItems(ui.Center).Shrink(0).Children(func() {
-			label(c, "Masir "+versionLabel(a.version), sizeCaption, 16, 500, p.text)
-			if a.amneziaWGVersion != "" {
-				label(c, "AmneziaWG "+versionLabel(a.amneziaWGVersion), sizeCaption, 16, 400, p.muted)
+		ui.Column(c).Padding(0, tw(4), tw(2), tw(4)).Gap(tw(0.5)).Shrink(0).Children(func() {
+			label(c, "Masir Fork "+versionLabel(a.version), sizeCaption, 16, 500, p.text)
+			daemon := "Daemon unavailable"
+			if version := a.status.GetVersion(); version != "" {
+				daemon = "Daemon · " + strings.TrimSpace(a.status.GetDistribution()+" "+versionLabel(version))
+			}
+			label(c, daemon, sizeCaption, 16, 400, p.muted)
+			if engine := a.status.GetAmneziawgVersion(); engine != "" {
+				label(c, "AmneziaWG "+versionLabel(engine), sizeCaption, 16, 400, p.muted)
+			} else if a.status.GetVersion() != "" {
+				label(c, "AmneziaWG version unavailable", sizeCaption, 16, 400, p.muted)
 			}
 		})
 		// The scroll itself runs to the panel's edge, so its bar sits beside the cards
@@ -33,8 +41,9 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 					ui.Row(c).Justify(ui.SpaceBetween).AlignItems(ui.Start).FillWidth().Gap(tw(0.5)).Grow(1).Children(func() {
 						ui.Link(c, "GitHub · main ↗", "https://github.com/nekl3103/masir-fork/tree/main").FontSize(10).FixedLineHeight(13).FontWeight(300).TextColor(ui.Hex("#73b0ff"))
 						ui.Column(c).Gap(tw(0.5)).Children(func() {
-							mono(c, "Daemon: "+versionLabel(a.status.GetVersion()), sizeMicro, 13, 400, p.muted).MaxLines(2)
-							mono(c, "xray: v"+a.status.GetXrayVersion(), sizeMicro, 13, 400, p.muted).MaxLines(2)
+							if version := a.status.GetXrayVersion(); version != "" {
+								mono(c, "Xray "+versionLabel(version), sizeMicro, 13, 400, p.muted).MaxLines(2)
+							}
 						})
 					})
 					if a.showUpdateControl() {

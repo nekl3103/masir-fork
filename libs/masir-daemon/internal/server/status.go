@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +17,20 @@ import (
 	"github.com/Gozargah/Masir/libs/masir-core/service"
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
 )
+
+var daemonAmneziaWGVersion = func() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, dep := range info.Deps {
+			if dep.Path == "github.com/amnezia-vpn/amneziawg-go/v3" {
+				if dep.Replace != nil {
+					return dep.Replace.Version
+				}
+				return dep.Version
+			}
+		}
+	}
+	return ""
+}()
 
 func (s *Server) GetStatus(ctx context.Context, _ *pb.GetStatusRequest) (*pb.GetStatusResponse, error) {
 	s.collectTraffic(ctx)
@@ -57,6 +72,8 @@ func (s *Server) status() *pb.Status {
 	}
 	st := &pb.Status{
 		Version:          Version,
+		Distribution:     "Masir Fork",
+		AmneziawgVersion: daemonAmneziaWGVersion,
 		XrayVersion:      s.xray.GetVersion(),
 		UptimeSeconds:    int64(time.Since(s.startedAt).Seconds()),
 		StartedAtMs:      s.startedAt.UnixMilli(),

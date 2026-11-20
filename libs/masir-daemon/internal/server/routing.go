@@ -127,6 +127,9 @@ func (s *Server) parseTarget(raw string) (store.Target, error) {
 }
 
 func (s *Server) TestRouting(ctx context.Context, req *pb.TestRoutingRequest) (*pb.TestRoutingResponse, error) {
+	if req.GetProbeEgress() {
+		return s.checkDomainRoute(ctx, req.GetDomain())
+	}
 	res, err := s.xray.TestRoute(ctx, xray.RouteQuery{
 		Domain:     req.Domain,
 		IP:         req.Ip,
@@ -137,5 +140,5 @@ func (s *Server) TestRouting(ctx context.Context, req *pb.TestRoutingRequest) (*
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &pb.TestRoutingResponse{OutboundTag: res.OutboundTag, Matched: res.Matched}, nil
+	return &pb.TestRoutingResponse{OutboundTag: res.OutboundTag, RuleTag: res.RuleTag, Matched: res.Matched}, nil
 }

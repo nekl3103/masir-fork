@@ -305,7 +305,7 @@ func (a *app) footer(c *ui.Context, p palette) {
 					a.updateControl(c, p, false)
 				})
 			} else {
-				label(c, "Masir "+versionLabel(a.version), sizeCaption, 15, 400, p.muted).LetterSpacing(0.275)
+				label(c, "Masir Fork "+versionLabel(a.version), sizeCaption, 15, 400, p.muted).LetterSpacing(0.275)
 			}
 			ui.Row(c).Gap(tw(2)).AlignItems(ui.Center).Children(func() {
 				ui.Row(c).Gap(tw(2)).AlignItems(ui.Center).Children(func() {

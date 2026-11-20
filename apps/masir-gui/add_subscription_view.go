@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -34,6 +36,7 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 						if nameSubmitted || enter {
 							a.addSubscription()
 						}
+						sourceFields(c, p, "add-source", &a.subSources, a.subBusy)
 					})
 				})
 
@@ -51,7 +54,7 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 			if a.subBusy {
 				text = "Importing & Parsing..."
 			}
-			if button(c, "import", text, true, strings.TrimSpace(a.subURL) == "", a.subBusy, p, cardRadius) {
+			if button(c, "import", text, true, len(sourceURLs(a.subURL, a.subSources)) == 0, a.subBusy, p, cardRadius) {
 				a.addSubscription()
 			}
 		})
@@ -78,4 +81,33 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 	if a.path == addSubscriptionPath {
 		a.settleHeight()
 	}
+}
+
+func sourceFields(c *ui.Context, p palette, key string, links *[]string, busy bool) {
+	remove := -1
+	for i := range *links {
+		title := fmt.Sprintf("Source %d", i+2)
+		fieldKey := fmt.Sprintf("%s-%d", key, i)
+		field(c, p, fieldKey, title, &(*links)[i], "https://… or tuic://…", iconLink, p.muted, func() {
+			if !busy && iconButton(c, fieldKey+"-remove", iconX, "Remove "+title, p, iconXS, variantSubtle, 14) {
+				remove = i
+			}
+		})
+	}
+	if remove >= 0 {
+		*links = slices.Delete(*links, remove, remove+1)
+	}
+	if len(*links) < 7 && button(c, key+"-more", "Add source", false, busy, false, p) {
+		*links = append(*links, "")
+	}
+}
+
+func sourceURLs(primary string, extra []string) []string {
+	var urls []string
+	for _, value := range append([]string{primary}, extra...) {
+		if link := strings.TrimSpace(value); link != "" {
+			urls = append(urls, link)
+		}
+	}
+	return urls
 }

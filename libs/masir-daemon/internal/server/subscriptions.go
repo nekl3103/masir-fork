@@ -50,7 +50,13 @@ func (s *Server) AddSubscription(ctx context.Context, req *pb.AddSubscriptionReq
 	if err := validCustomInterval(req.CustomUpdateIntervalMinutes); err != nil {
 		return nil, err
 	}
-	sub, err := s.subs.Add(ctx, req.Url, req.Name, req.CustomUpdateIntervalMinutes)
+	var sub *subs.Subscription
+	var err error
+	if len(req.Sources) != 0 {
+		sub, err = s.subs.AddSources(ctx, req.Sources, req.Name, req.CustomUpdateIntervalMinutes)
+	} else {
+		sub, err = s.subs.Add(ctx, req.Url, req.Name, req.CustomUpdateIntervalMinutes)
+	}
 	if err != nil {
 		return nil, toStatus(err)
 	}
@@ -66,7 +72,13 @@ func (s *Server) AlterSubscription(ctx context.Context, req *pb.AlterSubscriptio
 			return nil, err
 		}
 	}
-	sub, err := s.subs.Alter(ctx, req.Id, req.Name, req.Url, req.CustomUpdateIntervalMinutes)
+	var sub *subs.Subscription
+	var err error
+	if len(req.Sources) != 0 {
+		sub, err = s.subs.AlterSources(ctx, req.Id, req.Sources, req.Name, req.CustomUpdateIntervalMinutes)
+	} else {
+		sub, err = s.subs.Alter(ctx, req.Id, req.Name, req.Url, req.CustomUpdateIntervalMinutes)
+	}
 	if err != nil {
 		return nil, toStatus(err)
 	}
@@ -74,7 +86,7 @@ func (s *Server) AlterSubscription(ctx context.Context, req *pb.AlterSubscriptio
 	s.refreshSubscriptionCounts()
 	s.track("subscription_altered", map[string]any{
 		"name_changed":     req.Name != nil,
-		"url_changed":      req.Url != nil,
+		"url_changed":      req.Url != nil || len(req.Sources) != 0,
 		"interval_changed": req.CustomUpdateIntervalMinutes != nil,
 		"config_count":     len(sub.Configs),
 	})
@@ -120,6 +132,7 @@ func (srv *Server) toPBSubscription(s *subs.Subscription, includeConfig ...bool)
 		Id:                          s.ID,
 		Name:                        s.Name,
 		Url:                         s.URL,
+		Sources:                     s.SourceURLs(),
 		CreatedAtMs:                 s.CreatedAt.UnixMilli(),
 		UpdatedAtMs:                 unixMilli(s.UpdatedAt),
 		CheckedAtMs:                 unixMilli(s.CheckedAt),

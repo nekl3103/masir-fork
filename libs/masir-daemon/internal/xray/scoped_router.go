@@ -85,9 +85,14 @@ func (r *scopedRouter) PickRoute(ctx routing.Context) (routing.Route, error) {
 		return nil, err
 	}
 	if scope := table.profiles[route.GetOutboundTag()]; scope != nil {
-		return scope.pick(ctx), nil
+		return &scopedRoute{Route: scope.pick(ctx), outerRuleTag: route.GetRuleTag()}, nil
 	}
 	return route, nil
+}
+
+type scopedRoute struct {
+	routing.Route
+	outerRuleTag string
 }
 
 func (r *scopedRouter) releaseRoute() {

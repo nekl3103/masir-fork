@@ -14,6 +14,7 @@ import (
 
 type subscriptionPageState struct {
 	id, name, url, interval string
+	sources                 []string
 	removing, busy          bool
 	editHeight              float32
 	editHeader, editContent ui.Handle
@@ -113,13 +114,26 @@ func (a *app) saveSubscription() {
 		st.err = "Enter an interval in whole minutes, or 0 for automatic."
 		return
 	}
-	u, err := url.Parse(strings.TrimSpace(st.url))
-	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
-		st.err = "Enter an HTTP or HTTPS subscription URL."
+	links := sourceURLs(st.url, st.sources)
+	if len(links) == 0 {
+		st.err = "Enter at least one subscription URL or TUIC link."
 		return
 	}
-	name, address, minutes := strings.TrimSpace(st.name), strings.TrimSpace(st.url), uint32(interval)
-	a.subscriptionAction("edit", &pb.AlterSubscriptionRequest{Id: st.id, Name: &name, Url: &address, CustomUpdateIntervalMinutes: &minutes})
+	for _, link := range links {
+		u, err := url.Parse(link)
+		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http" && u.Scheme != "tuic") {
+			st.err = "Enter an HTTP(S) subscription URL or a TUIC link."
+			return
+		}
+	}
+	name, minutes := strings.TrimSpace(st.name), uint32(interval)
+	req := &pb.AlterSubscriptionRequest{Id: st.id, Name: &name, CustomUpdateIntervalMinutes: &minutes}
+	if len(links) == 1 && len(a.selectedSubscription().GetSources()) <= 1 {
+		req.Url = &links[0]
+	} else {
+		req.Sources = links
+	}
+	a.subscriptionAction("edit", req)
 }
 
 func (a *app) subscriptionAction(action string, req *pb.AlterSubscriptionRequest) {

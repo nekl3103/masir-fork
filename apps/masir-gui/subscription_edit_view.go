@@ -13,6 +13,10 @@ func (a *app) openSubscriptionEdit() {
 		return
 	}
 	st.name, st.url, st.interval = s.Name, s.Url, strconv.FormatUint(uint64(s.CustomUpdateIntervalMinutes), 10)
+	st.sources = nil
+	if len(s.Sources) > 1 {
+		st.sources = append(st.sources, s.Sources[1:]...)
+	}
 	st.removing, st.err, st.editHeight = false, "", 0
 	a.openPage(editSubscriptionPath)
 }
@@ -33,6 +37,7 @@ func (a *app) subscriptionEditView(c *ui.Context, p palette) {
 					ui.Column(c).Padding(10).Gap(10).Children(func() {
 						field(c, p, "edit-sub-name", "Name", &st.name, "Name", iconTag, p.muted, nil)
 						field(c, p, "edit-sub-url", "URL", &st.url, "https://…", iconLink, p.muted, nil)
+						sourceFields(c, p, "edit-source", &st.sources, st.busy)
 						field(c, p, "edit-sub-interval", "Interval (minutes; 0 = automatic)", &st.interval, "0", iconClock, p.muted, nil)
 					})
 				})

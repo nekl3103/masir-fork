@@ -80,6 +80,7 @@ func (a *app) startImportSubscription(subURL, name string, interval uint32) {
 		a.openPage(addSubscriptionPath)
 	}
 	a.subURL = subURL
+	a.subSources = nil
 	a.subName = name
 	a.subCustomInterval = interval
 	a.subError = ""

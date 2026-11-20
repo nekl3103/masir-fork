@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"debug/buildinfo"
 	"fmt"
 	"log"
 	"os"
@@ -125,7 +124,7 @@ func (s *shell) ready() {
 		ID:             "masir",
 		Icon:           icon,
 		IconIsTemplate: runtime.GOOS == "darwin", // the menu bar tints its own; elsewhere the icon keeps its color
-		ToolTip:        "Masir",
+		ToolTip:        "Masir Fork",
 	}); err != nil {
 		log.Print("tray: ", err)
 	} else {
@@ -211,23 +210,6 @@ func bundledBinary() string {
 	for _, p := range bundledBinaryPaths() {
 		if fileExists(p) {
 			return p
-		}
-	}
-	return ""
-}
-
-// Read the engine version from the daemon shipped with this copy of Masir.
-func bundledAmneziaWGVersion() string {
-	info, err := buildinfo.ReadFile(bundledBinary())
-	if err != nil {
-		return ""
-	}
-	for _, dep := range info.Deps {
-		if dep.Path == "github.com/amnezia-vpn/amneziawg-go/v3" {
-			if dep.Replace != nil {
-				return dep.Replace.Version
-			}
-			return dep.Version
 		}
 	}
 	return ""
@@ -337,7 +319,6 @@ func main() {
 	})
 	mygo.App.WhenReady(func() {
 		a.binary = daemonBinary()
-		a.amneziaWGVersion = bundledAmneziaWGVersion()
 		if v := mygo.App.Version(); v != "" { // the bundle's version, which is the app's
 			a.version = v
 		}

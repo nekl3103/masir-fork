@@ -8,6 +8,7 @@ type pagePath string
 const (
 	ruleDetailsPath         pagePath = "/rules/details"
 	ruleEditPath            pagePath = "/rules/edit"
+	routeCheckPath          pagePath = "/rules/check-domain"
 	subscriptionsPath       pagePath = "/subscriptions"
 	subscriptionDetailsPath pagePath = "/subscriptions/details"
 	mainPath                pagePath = "/"
@@ -37,7 +38,7 @@ func init() {
 	pages = []page{
 		{
 			path:   mainPath,
-			title:  "Masir",
+			title:  "Masir Fork",
 			height: 0,
 			enter:  nil,
 			build:  (*app).mainView,
@@ -45,6 +46,7 @@ func init() {
 		},
 		{path: ruleDetailsPath, title: "Rule", height: 560, build: (*app).ruleDetailsView},
 		{path: ruleEditPath, title: "Edit Rule", height: 620, build: (*app).ruleEditView},
+		{path: routeCheckPath, title: "Check Domain Route", height: 365, build: (*app).routeCheckView},
 		{path: subscriptionsPath, title: "Subscriptions", height: 520, build: (*app).subscriptionsView},
 		{path: subscriptionDetailsPath, title: "Subscription", height: 560, build: (*app).subscriptionDetailsView},
 		{path: editSubscriptionPath, title: "Edit Subscription", height: subscriptionEditHeight, build: (*app).subscriptionEditView},

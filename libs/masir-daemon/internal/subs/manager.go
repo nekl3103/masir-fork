@@ -55,6 +55,7 @@ type Subscription struct {
 	LastError               string    `json:"lastError,omitempty"`
 	Usage                   *Usage    `json:"usage,omitempty"`
 	Configs                 []Config  `json:"configs"`
+	Sources                 []Source  `json:"sources,omitempty"`
 }
 
 type Latency struct {
@@ -95,6 +96,9 @@ func (s *Subscription) interval(def time.Duration) time.Duration {
 }
 
 func (s *Subscription) due(now time.Time, def time.Duration) bool {
+	if len(s.Sources) != 0 {
+		return slices.ContainsFunc(s.Sources, func(source Source) bool { return source.due(now, s.interval(def)) })
+	}
 	if isTUICLink(s.URL) {
 		return false
 	}
@@ -283,6 +287,7 @@ func (m *Manager) Alter(ctx context.Context, id string, name, rawURL *string, cu
 			return nil, err
 		}
 		s.URL = newURL
+		s.Sources = nil
 		s.CheckedAt = m.now()
 		s.applyFetch(f, configs, s.CheckedAt)
 	}
@@ -338,9 +343,16 @@ func (m *Manager) Find(subID, configID, name string) (Config, bool) {
 
 // Update re-fetches now. On failure the old configs stay and LastError records why.
 func (m *Manager) Update(ctx context.Context, id string) (*Subscription, error) {
+	return m.update(ctx, id, false)
+}
+
+func (m *Manager) update(ctx context.Context, id string, scheduled bool) (*Subscription, error) {
 	cur, err := m.Get(id)
 	if err != nil {
 		return nil, err
+	}
+	if len(cur.Sources) != 0 {
+		return m.updateSources(ctx, cur, scheduled)
 	}
 	if isTUICLink(cur.URL) {
 		return cur, nil
@@ -353,7 +365,7 @@ func (m *Manager) Update(ctx context.Context, id string) (*Subscription, error) 
 		m.mu.Unlock()
 		return nil, err
 	}
-	if s.URL != cur.URL {
+	if s.URL != cur.URL || len(s.Sources) != 0 {
 		m.mu.Unlock()
 		return s, nil
 	}
@@ -531,7 +543,7 @@ func (m *Manager) refreshDue(ctx context.Context) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
 			defer cancel()
-			u, err := m.Update(ctx, s.ID)
+			u, err := m.update(ctx, s.ID, true)
 			if err != nil {
 				m.log("warn", fmt.Sprintf("subscription %s: %v", s.Name, err))
 			} else {
@@ -648,7 +660,7 @@ func (m *Manager) checkUniqueURLLocked(u, exceptID string) error {
 		return err
 	}
 	for _, s := range all {
-		if s.URL == u && s.ID != exceptID {
+		if s.ID != exceptID && (s.URL == u || slices.ContainsFunc(s.Sources, func(source Source) bool { return source.URL == u })) {
 			return fmt.Errorf("subscription %q has this url: %w", s.Name, ErrExists)
 		}
 	}

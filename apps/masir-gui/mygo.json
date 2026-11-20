@@ -2,7 +2,7 @@
   "name": "Masir",
   "slug": "masir-desktop",
   "identifier": "com.gozargah.masir.desktop",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "urlSchemes": [
     "masir"
   ],
@@ -13,7 +13,8 @@
   },
   "macos": {
     "infoPlist": {
-      "LSUIElement": true
+      "LSUIElement": true,
+      "CFBundleDisplayName": "Masir Fork"
     }
   },
   "linux": {
