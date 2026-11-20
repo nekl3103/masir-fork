@@ -64,8 +64,8 @@ release:
   # workflow), so a release never appears with half its downloads missing.
   draft: true
   github:
-    owner: Gozargah
-    name: Masir
+    owner: nekl3103
+    name: masir-fork
   # The first thing on the release page: which file to download, per system, with the
   # updater's own files folded away at the end. The names here are the assets the build
   # uploads (see scripts/build-gui.sh and .github/workflows/release.yml); the publish job
@@ -83,9 +83,9 @@ release:
 
     | | Installer | Portable |
     |---|---|---|
-    | **macOS** | [Apple Silicon](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-darwin-{{ .Version }}-arm64.dmg) · [Intel](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-darwin-{{ .Version }}-amd64.dmg) | [Apple Silicon](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-darwin-{{ .Version }}-arm64.tar.gz) · [Intel](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-darwin-{{ .Version }}-amd64.tar.gz) |
-    | **Windows** | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-setup-windows-{{ .Version }}-amd64.exe) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-setup-windows-{{ .Version }}-arm64.exe) | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-windows-{{ .Version }}-amd64.zip) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-windows-{{ .Version }}-arm64.zip) |
-    | **Linux** | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-amd64.deb) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-arm64.deb) · [x64 RPM](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-amd64.rpm) · [ARM64 RPM](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-arm64.rpm) · [Arch PKGBUILD](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-arch-{{ .Version }}.tar.gz) | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-linux-{{ .Version }}-amd64.tar.gz) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-desktop-portable-linux-{{ .Version }}-arm64.tar.gz) |
+    | **macOS** | [Apple Silicon](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-darwin-{{ .Version }}-arm64.dmg) · [Intel](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-darwin-{{ .Version }}-amd64.dmg) | [Apple Silicon](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-darwin-{{ .Version }}-arm64.tar.gz) · [Intel](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-darwin-{{ .Version }}-amd64.tar.gz) |
+    | **Windows** | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-setup-windows-{{ .Version }}-amd64.exe) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-setup-windows-{{ .Version }}-arm64.exe) | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-windows-{{ .Version }}-amd64.zip) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-windows-{{ .Version }}-arm64.zip) |
+    | **Linux** | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-amd64.deb) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-arm64.deb) · [x64 RPM](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-amd64.rpm) · [ARM64 RPM](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-linux-{{ .Version }}-arm64.rpm) · [Arch PKGBUILD](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-arch-{{ .Version }}.tar.gz) | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-linux-{{ .Version }}-amd64.tar.gz) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-desktop-portable-linux-{{ .Version }}-arm64.tar.gz) |
 
     ## Masir CLI
 
@@ -101,9 +101,9 @@ release:
 
     | | Download |
     |---|---|
-    | **macOS** | [Apple Silicon](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-darwin-{{ .Version }}-arm64.tar.gz) · [Intel](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-darwin-{{ .Version }}-amd64.tar.gz) |
-    | **Windows** | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-windows-{{ .Version }}-amd64.zip) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-windows-{{ .Version }}-arm64.zip) |
-    | **Linux** | [x64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-linux-{{ .Version }}-amd64.tar.gz) · [ARM64](https://github.com/Gozargah/Masir/releases/download/{{ .Tag }}/masir-cli-linux-{{ .Version }}-arm64.tar.gz) |
+    | **macOS** | [Apple Silicon](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-darwin-{{ .Version }}-arm64.tar.gz) · [Intel](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-darwin-{{ .Version }}-amd64.tar.gz) |
+    | **Windows** | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-windows-{{ .Version }}-amd64.zip) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-windows-{{ .Version }}-arm64.zip) |
+    | **Linux** | [x64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-linux-{{ .Version }}-amd64.tar.gz) · [ARM64](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-cli-linux-{{ .Version }}-arm64.tar.gz) |
 
     <details><summary>What are the other files?</summary>
 
@@ -112,7 +112,7 @@ release:
     - `update-<os>-<arch>.json` — the signed update manifest the app reads.
     - `masir-desktop-update-windows-…tar.gz` — the Windows archive the updater reads.
     - `checksums.txt`, `checksums-desktop.txt` and their `.minisig` — verify a download;
-      [docs/updates.md](https://github.com/Gozargah/Masir/blob/master/docs/updates.md)
+      [docs/updates.md](https://github.com/nekl3103/masir-fork/blob/main/docs/updates.md)
       has the commands and the whole update flow.
 
     </details>

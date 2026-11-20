@@ -5,6 +5,8 @@ import (
 	"net"
 	"slices"
 	"strings"
+
+	"github.com/Gozargah/Masir/libs/masir-daemon/internal/amneziawg"
 )
 
 // BootstrapDomains lists the hostnames (not IPs) these outbounds dial, as full: matchers.
@@ -45,7 +47,7 @@ func serverHosts(raw json.RawMessage) []string {
 		return nil
 	}
 	var hosts []string
-	if o.Protocol != "wireguard" {
+	if !strings.EqualFold(o.Protocol, "wireguard") && !strings.EqualFold(o.Protocol, amneziawg.Protocol) {
 		switch a := o.Settings.Address.(type) {
 		case string:
 			hosts = append(hosts, a)

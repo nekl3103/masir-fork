@@ -37,7 +37,7 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 					})
 				})
 
-				label(c, "Supports standard V2Ray/Xray subscription links.", sizeCaption, 15, 400, p.muted).Padding(0, tw(1))
+				label(c, "Supports V2Ray/Xray, AmneziaWG, TUIC v5 and MASQUE (JSON).", sizeCaption, 15, 400, p.muted).Padding(0, tw(1))
 				if a.subError != "" {
 					ui.Row(c).Label("Subscription import error").Gap(tw(1.5)).Padding(tw(2.5), tw(3)).Radius(cardRadius).Background(p.errorSurface).Border(1, p.errorBorder).Children(func() {
 						label(c, a.subError, sizeCaption, 15, 400, p.errorC).Selectable()

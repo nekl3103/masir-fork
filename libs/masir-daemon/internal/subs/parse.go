@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
+	"github.com/Gozargah/Masir/libs/masir-daemon/internal/amneziawg"
+	"github.com/Gozargah/Masir/libs/masir-daemon/internal/tuic"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/xray"
 	"github.com/xtls/libxray/share"
 )
@@ -50,13 +53,25 @@ var errNoConfigs = errors.New("subscription has no usable configs")
 var utilityProtocols = map[string]bool{"freedom": true, "blackhole": true, "dns": true, "loopback": true}
 
 // Parse accepts xray JSON (an outbound, a list of outbounds, a full config, or a list of
-// full configs) or share links (vless://, vmess://, trojan://, ss://, hysteria2://...,
-// plain or base64). Configs Xray can't build are dropped.
+// full configs), an AmneziaWG configuration, or share links (plain or base64).
+// Configs Xray can't build are dropped.
 func Parse(body []byte) ([]Config, error) {
-	text := strings.TrimSpace(strings.TrimPrefix(string(body), "\ufeff"))
+	text := cleanSubscriptionText(string(body))
+	if !strings.HasPrefix(text, "[") && !strings.HasPrefix(text, "{") &&
+		!strings.Contains(text, "://") && !amneziawg.IsConfig(text) {
+		if decoded, err := decodeBase64(text); err == nil {
+			text = cleanSubscriptionText(decoded)
+		}
+	}
 	var named []namedOutbound
 	var err error
 	switch {
+	case amneziawg.IsConfig(text):
+		var cfg amneziawg.Config
+		cfg, err = amneziawg.ParseConfig(text)
+		if err == nil {
+			named = []namedOutbound{amneziaOutbound(amneziawg.Profile{Config: cfg})}
+		}
 	case strings.HasPrefix(text, "["):
 		named, err = parseJSONArray(text)
 	case strings.HasPrefix(text, "{"):
@@ -82,6 +97,10 @@ func Parse(body []byte) ([]Config, error) {
 		return nil, errNoConfigs
 	}
 	return out, nil
+}
+
+func cleanSubscriptionText(text string) string {
+	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(text), "\ufeff"))
 }
 
 type namedOutbound struct {
@@ -164,21 +183,36 @@ func pickMainOutbound(outs []map[string]json.RawMessage) map[string]json.RawMess
 	return nil
 }
 
-// parseShareLinks handles v2rayN-style vmess here and hands every other link to libXray.
+// parseShareLinks handles AmneziaWG and v2rayN-style VMess before calling libXray.
 func parseShareLinks(text string) ([]namedOutbound, error) {
 	if !strings.Contains(text, "://") {
-		decoded, err := decodeBase64(text)
-		if err != nil || !strings.Contains(decoded, "://") {
-			return nil, errors.New("unrecognized subscription format")
-		}
-		text = decoded
+		return nil, errors.New("unrecognized subscription format")
 	}
 
 	var out []namedOutbound
 	var rest []string
+	var amneziaError error
 	for line := range strings.SplitSeq(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if isAmneziaLink(line) {
+			profiles, err := amneziawg.ParseLink(line)
+			if err != nil {
+				amneziaError = err
+				continue
+			}
+			for _, profile := range profiles {
+				out = append(out, amneziaOutbound(profile))
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "tuic://") {
+			cfg, name, err := tuic.ParseLink(line)
+			if err == nil {
+				out = append(out, protocolOutbound(tuic.Protocol, name, cfg))
+			}
 			continue
 		}
 		n, ok, err := parseVMessQR(line)
@@ -190,6 +224,9 @@ func parseShareLinks(text string) ([]namedOutbound, error) {
 		}
 	}
 	if len(rest) == 0 {
+		if len(out) == 0 && amneziaError != nil {
+			return nil, amneziaError
+		}
 		return out, nil
 	}
 
@@ -210,6 +247,23 @@ func parseShareLinks(text string) ([]namedOutbound, error) {
 		out = append(out, namedOutbound{raw: o}) // libXray puts the link's #remark in tag
 	}
 	return out, nil
+}
+
+func isAmneziaLink(text string) bool {
+	return strings.HasPrefix(text, "vpn://") || strings.HasPrefix(text, "awg://") || strings.HasPrefix(text, "amneziawg://")
+}
+
+func amneziaOutbound(profile amneziawg.Profile) namedOutbound {
+	return protocolOutbound(amneziawg.Protocol, profile.Name, profile.Config)
+}
+
+func protocolOutbound(kind, name string, config any) namedOutbound {
+	protocol, _ := json.Marshal(kind)
+	settings, _ := json.Marshal(config)
+	return namedOutbound{
+		name: name,
+		raw:  map[string]json.RawMessage{"protocol": protocol, "settings": settings},
+	}
 }
 
 func newConfig(n namedOutbound) (Config, error) {
@@ -253,6 +307,17 @@ func newConfig(n namedOutbound) (Config, error) {
 	c.Network, c.Security = stream.Network, stream.Security
 	if c.Network == "" || c.Network == "raw" { // xray renamed tcp to raw; users know it as tcp
 		c.Network = "tcp"
+	}
+	if c.Protocol == amneziawg.Protocol {
+		var settings amneziawg.Config
+		if json.Unmarshal(o["settings"], &settings) == nil && len(settings.Peers) != 0 {
+			host, port, _ := net.SplitHostPort(settings.Peers[0].Endpoint)
+			c.Address, c.Port = host, anyInt(port)
+		}
+		c.Network = "udp"
+	}
+	if c.Protocol == tuic.Protocol {
+		c.Network, c.Security = "quic", "tls"
 	}
 	if c.Security == "" {
 		c.Security = "none"

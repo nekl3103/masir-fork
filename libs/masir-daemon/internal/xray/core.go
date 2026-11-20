@@ -21,7 +21,6 @@ import (
 	"github.com/xtls/xray-core/features/outbound"
 	"github.com/xtls/xray-core/features/routing"
 	"github.com/xtls/xray-core/features/stats"
-	confserial "github.com/xtls/xray-core/infra/conf/serial"
 	_ "github.com/xtls/xray-core/main/distro/all" // registers all protocols/transports
 )
 
@@ -158,7 +157,7 @@ func (c *Core) restartLocked(ctx context.Context, p *Profile) error {
 	if err != nil {
 		return err
 	}
-	cfg, err := confserial.LoadJSONConfig(bytes.NewReader(raw))
+	cfg, err := loadConfig(raw)
 	if err != nil {
 		return fmt.Errorf("xray config: %w", err)
 	}

@@ -1,7 +1,6 @@
 package xray
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,7 +16,6 @@ import (
 	xserial "github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/common/session"
 	"github.com/xtls/xray-core/core"
-	confserial "github.com/xtls/xray-core/infra/conf/serial"
 )
 
 const DefaultProbeURL = "https://www.google.com/generate_204"
@@ -74,7 +72,7 @@ func measureDelayLocal(ctx context.Context, cfgJSON []byte, opt LatencyOptions) 
 		return measureThrough(ctx, engine.inst, "", opt)
 	}
 
-	cfg, err := confserial.LoadJSONConfig(bytes.NewReader(cfgJSON))
+	cfg, err := loadConfig(cfgJSON)
 	if err != nil {
 		return 0, fmt.Errorf("load config: %w", err)
 	}
@@ -176,7 +174,7 @@ func measureBatch(ctx context.Context, batch []Probe, opt LatencyOptions, worker
 		}
 	}
 
-	cfg, err := confserial.LoadJSONConfig(bytes.NewReader(marshal(map[string]any{"outbounds": outs})))
+	cfg, err := loadConfig(marshal(map[string]any{"outbounds": outs}))
 	if err != nil {
 		failBatch(fmt.Errorf("load config: %w", err))
 		return

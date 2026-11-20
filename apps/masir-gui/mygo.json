@@ -2,13 +2,13 @@
   "name": "Masir",
   "slug": "masir-desktop",
   "identifier": "com.gozargah.masir.desktop",
-  "version": "0.1.5",
+  "version": "0.1.8",
   "urlSchemes": [
     "masir"
   ],
   "updates": {
-    "publicKey": "SQxOnMeVtf9SP4F9deXYOKiTLTn+R2dlv7rQgp3StoA=",
-    "github": "Gozargah/Masir",
+    "publicKey": "jIpur1HfMsyUlUJd2LryvQi8ksTvpUErDpm/56pnjUw=",
+    "github": "nekl3103/masir-fork",
     "deltas": 1
   },
   "macos": {

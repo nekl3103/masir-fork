@@ -131,7 +131,42 @@ func buildOutbound(raw json.RawMessage) (*core.OutboundHandlerConfig, error) {
 	if err := json.Unmarshal(raw, &oc); err != nil {
 		return nil, err
 	}
-	return oc.Build()
+	settings, err := prepareCustomOutbound(&oc)
+	if err != nil {
+		return nil, err
+	}
+	outbound, err := oc.Build()
+	if err != nil {
+		return nil, err
+	}
+	if settings != nil {
+		outbound.ProxySettings = settings
+	}
+	return outbound, nil
+}
+
+// Check transport requirements during subscription import. Xray's MASQUE
+// client otherwise reports an incompatible transport only when it starts.
+func validateMasqueOutbound(outbound *conf.OutboundDetourConfig) error {
+	stream := outbound.StreamSetting
+	if stream == nil || !strings.EqualFold(stream.Security, "tls") {
+		return errors.New("MASQUE requires TLS")
+	}
+	network := stream.Network
+	if stream.Method != nil {
+		network = stream.Method
+	}
+	if network == nil {
+		return errors.New("MASQUE requires the masque transport")
+	}
+	transport, err := network.Build()
+	if err != nil || transport != "masque" {
+		return errors.New("MASQUE requires the masque transport")
+	}
+	if mux := outbound.MuxSettings; mux != nil && mux.Enabled {
+		return errors.New("MASQUE does not support Xray Mux")
+	}
+	return nil
 }
 
 func buildRule(raw json.RawMessage) (*router.Config, error) {

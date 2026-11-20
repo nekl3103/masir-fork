@@ -4,6 +4,37 @@ Two signed channels update masir: the daemon and command line from the release's
 `checksums.txt`, and the desktop app from MyGo's ed25519 manifest. This is how they run,
 what they download, and how a change stays compatible with copies already installed.
 
+## Publishing to the fork
+
+The desktop app and daemon check public releases in `nekl3103/masir-fork`. The fork
+uses its own keys. Start from a fork build with those public keys embedded. A version
+released as a tag must be newer than the installed fork build.
+
+Configure the signing keys from `build/fork-signing/` under
+**Settings → Secrets and variables → Actions** in the fork:
+
+| Type | Name | Local file |
+|---|---|---|
+| Repository variable | `MASIR_UPDATE_PUBKEY` | `minisign.pub` |
+| Repository secret | `MINISIGN_SECRET_KEY` | `minisign.key` |
+| Repository secret | `MYGO_UPDATER_PRIVATE_KEY` | `mygo-update.key` |
+
+Keep backups of the private keys. The desktop public key is in
+`apps/masir-gui/mygo.json`.
+
+Push the source to `main`, then push a version tag built from that commit. For a build
+installed as `0.1.8`, the next release can use `v0.1.9`.
+
+```sh
+git push -u origin main
+git tag v0.1.9
+git push origin v0.1.9
+```
+
+The Release workflow publishes the signed assets to **Releases** after the builds
+and checks pass. It includes the installer, updater archives, manifests, and
+checksums. A push to `main` alone does not publish an update.
+
 ## What asks, and when
 
 | Who | When | Costs |

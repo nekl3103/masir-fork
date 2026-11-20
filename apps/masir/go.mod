@@ -22,6 +22,7 @@ require (
 require (
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251106193318-19329a3e8410 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828 // indirect
 	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/apernet/quic-go v0.63.1-0.20261004180939-a10df75c260c // indirect
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
@@ -37,6 +38,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-typeset/bidi v0.3.1 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
+	github.com/gofrs/uuid/v5 v5.5.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
@@ -74,6 +76,8 @@ require (
 	github.com/refraction-networking/utls v1.8.3-0.20261108164504-a13c59ffe98b // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/sagernet/sing v0.9.0-beta.4 // indirect
+	github.com/sagernet/sing-quic v0.7.1 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
@@ -104,3 +108,6 @@ replace github.com/Gozargah/Masir/libs/masir-core => ../../libs/masir-core
 replace github.com/Gozargah/Masir/libs/masir-proto => ../../libs/masir-proto
 
 replace github.com/Gozargah/Masir/libs/masir-daemon => ../../libs/masir-daemon
+
+// Keep Xray's generated Go module. The newer gVisor source pulled by libXray requires Bazel.
+replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20260122175437-89a5d21be8f0
