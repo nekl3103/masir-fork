@@ -74,6 +74,7 @@ func (g *profileGraph) add(p *subs.OutboundProfile, namespace string) (profileTa
 		if err := canonicalFields(o, "tag", "protocol", "streamSettings", "settings"); err != nil {
 			return profileTarget{}, nil, err
 		}
+		stripHysteriaServerMasquerade(o)
 		if i == 0 {
 			firstOutbound = tag
 		}

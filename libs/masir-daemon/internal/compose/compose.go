@@ -368,6 +368,7 @@ func withTag(raw json.RawMessage, tag string) (json.RawMessage, error) {
 	if err := json.Unmarshal(raw, &o); err != nil {
 		return nil, err
 	}
+	stripHysteriaServerMasquerade(o)
 	o["tag"], _ = json.Marshal(tag)
 	return json.Marshal(o)
 }

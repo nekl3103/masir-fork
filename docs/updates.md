@@ -23,13 +23,13 @@ Keep backups of the private keys. The desktop public key is in
 `apps/masir-gui/mygo.json`.
 
 Push the source to `main`, then push a version tag built from that commit. The release
-workflow checks that the tag belongs to `main`. For a build installed as `0.1.11`, the
-next release can use `v0.1.12`.
+workflow checks that the tag belongs to `main`. For a build installed as `0.1.12`, the
+next release can use `v0.1.13`.
 
 ```sh
 git push -u origin main
-git tag v0.1.12
-git push origin v0.1.12
+git tag v0.1.13
+git push origin v0.1.13
 ```
 
 The Release workflow publishes the signed assets to **Releases** after the builds
