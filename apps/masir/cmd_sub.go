@@ -486,8 +486,8 @@ func findSub(all []subNodes, nameOrID string) (subNodes, bool) {
 
 func validateURL(s string) error {
 	u, err := url.Parse(strings.TrimSpace(s))
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return fail("enter an http:// or https:// URL")
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "tuic") || u.Host == "" {
+		return fail("enter an HTTP(S) subscription URL or a tuic:// link")
 	}
 	return nil
 }

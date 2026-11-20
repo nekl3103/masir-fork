@@ -59,6 +59,36 @@ func newTestManager(t *testing.T, proxyDial func(context.Context, string, string
 	return m
 }
 
+func TestDirectTUICImport(t *testing.T) {
+	ctx := context.Background()
+	m := newTestManager(t, nil)
+	const link = "tuic://00000000-0000-4000-8000-000000000001:test-password@tuic.example:10443?allow_insecure=0&alpn=h3&congestion_control=bbr&sni=tuic.example&udp_relay_mode=native#Game%20B4%20TUIC"
+
+	s, err := m.Add(ctx, link, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Name != "Game B4 TUIC" || len(s.Configs) != 1 {
+		t.Fatal("TUIC link was not imported as a standalone server")
+	}
+	if cfg := s.Configs[0]; cfg.Protocol != "tuic" || cfg.Address != "tuic.example" || cfg.Port != 10443 {
+		t.Fatal("incorrect TUIC server")
+	}
+	if s.due(s.CheckedAt.Add(24*time.Hour), DefaultInterval) {
+		t.Fatal("standalone link should not auto-refresh")
+	}
+	refreshed, err := m.Update(ctx, s.ID)
+	if err != nil || !refreshed.CheckedAt.Equal(s.CheckedAt) {
+		t.Fatalf("refresh should leave the standalone server alone: %v", err)
+	}
+	if _, err := m.Add(ctx, link, "", 0); !errors.Is(err, ErrExists) {
+		t.Fatalf("duplicate TUIC link: %v", err)
+	}
+	if _, err := m.Add(ctx, "tuic://tuic.example:10443", "", 0); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("invalid TUIC link: %v", err)
+	}
+}
+
 func TestAddAndList(t *testing.T) {
 	ctx := context.Background()
 	p := newProvider(t, links())

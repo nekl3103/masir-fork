@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Gozargah/Masir/libs/masir-daemon/internal/tuic"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/userfs"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/xray"
 )
@@ -94,6 +95,9 @@ func (s *Subscription) interval(def time.Duration) time.Duration {
 }
 
 func (s *Subscription) due(now time.Time, def time.Duration) bool {
+	if isTUICLink(s.URL) {
+		return false
+	}
 	last := cmp.Or(s.CheckedAt, s.CreatedAt)
 	wait := s.interval(def)
 	if s.LastError != "" {
@@ -151,6 +155,10 @@ func NewManager(dir, activePath string, proxyDial func(ctx context.Context, netw
 func (m *Manager) List() ([]Subscription, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return m.listLocked()
+}
+
+func (m *Manager) listLocked() ([]Subscription, error) {
 	entries, err := userfs.ReadDir(m.dir)
 	if err != nil {
 		return nil, err
@@ -217,6 +225,9 @@ func (m *Manager) Add(ctx context.Context, rawURL, name string, customIntervalMi
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if err := m.checkUniqueURLLocked(u, ""); err != nil {
+		return nil, err
+	}
 	if err := m.save(s); err != nil {
 		return nil, err
 	}
@@ -267,6 +278,10 @@ func (m *Manager) Alter(ctx context.Context, id string, name, rawURL *string, cu
 		s.CustomIntervalMinutes = *customIntervalMinutes
 	}
 	if newURL != "" {
+		if err := m.checkUniqueURLLocked(newURL, id); err != nil {
+			m.mu.Unlock()
+			return nil, err
+		}
 		s.URL = newURL
 		s.CheckedAt = m.now()
 		s.applyFetch(f, configs, s.CheckedAt)
@@ -327,6 +342,9 @@ func (m *Manager) Update(ctx context.Context, id string) (*Subscription, error) 
 	if err != nil {
 		return nil, err
 	}
+	if isTUICLink(cur.URL) {
+		return cur, nil
+	}
 	f, configs, ferr := m.download(ctx, cur.URL)
 
 	m.mu.Lock()
@@ -334,6 +352,10 @@ func (m *Manager) Update(ctx context.Context, id string) (*Subscription, error) 
 	if err != nil {
 		m.mu.Unlock()
 		return nil, err
+	}
+	if s.URL != cur.URL {
+		m.mu.Unlock()
+		return s, nil
 	}
 	s.CheckedAt = m.now()
 	if ferr != nil {
@@ -560,6 +582,13 @@ func (m *Manager) changed(ctx context.Context) {
 // download fetches and parses url directly, then through the proxy if that fails
 // (censored provider domains, or an ISP serving a block page).
 func (m *Manager) download(ctx context.Context, u string) (fetched, []Config, error) {
+	if isTUICLink(u) {
+		configs, err := Parse([]byte(u))
+		if err != nil {
+			return fetched{}, nil, fmt.Errorf("invalid TUIC v5 link: %w", ErrInvalid)
+		}
+		return fetched{title: configs[0].Name}, configs, nil
+	}
 	f, configs, err := fetchAndParse(ctx, m.direct, u)
 	if err == nil || m.viaProxy == nil {
 		return f, configs, wrapFetch(err)
@@ -608,7 +637,13 @@ func (s *Subscription) applyFetch(f fetched, configs []Config, now time.Time) {
 }
 
 func (m *Manager) checkUniqueURL(u, exceptID string) error {
-	all, err := m.List()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.checkUniqueURLLocked(u, exceptID)
+}
+
+func (m *Manager) checkUniqueURLLocked(u, exceptID string) error {
+	all, err := m.listLocked()
 	if err != nil {
 		return err
 	}
@@ -690,11 +725,13 @@ func newID() string {
 
 func checkURL(raw string) (string, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return "", fmt.Errorf("url must be an http(s) address: %w", ErrInvalid)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https" && u.Scheme != tuic.Protocol) || u.Host == "" {
+		return "", fmt.Errorf("enter an HTTP(S) subscription URL or a tuic:// link: %w", ErrInvalid)
 	}
 	return u.String(), nil
 }
+
+func isTUICLink(u string) bool { return strings.HasPrefix(u, tuic.Protocol+"://") }
 
 func hostOf(u string) string {
 	p, _ := url.Parse(u)
