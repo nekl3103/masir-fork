@@ -13,6 +13,12 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 		ui.Column(c).Padding(pageInset, tw(4), 0, tw(4)).Shrink(0).Children(func() {
 			a.pageHeader(c, p, "Settings")
 		})
+		ui.Row(c).Padding(0, tw(4), tw(2), tw(4)).Gap(tw(2)).AlignItems(ui.Center).Shrink(0).Children(func() {
+			label(c, "Masir "+versionLabel(a.version), sizeCaption, 16, 500, p.text)
+			if a.amneziaWGVersion != "" {
+				label(c, "AmneziaWG "+versionLabel(a.amneziaWGVersion), sizeCaption, 16, 400, p.muted)
+			}
+		})
 		// The scroll itself runs to the panel's edge, so its bar sits beside the cards
 		// instead of over them; the sections keep the same margins inside it.
 		ui.Scroll(c.Key("settings-scroll")).Grow(1).Basis(0).MinHeight(0).
@@ -25,20 +31,12 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 				a.systemSection(c, p)
 				ui.Column(c.Key("app")).Gap(tw(3)).AlignItems(ui.Center).Justify(ui.SpaceBetween).Shrink(0).Children(func() {
 					ui.Row(c).Justify(ui.SpaceBetween).AlignItems(ui.Start).FillWidth().Gap(tw(0.5)).Grow(1).Children(func() {
-						ui.Column(c).Gap(tw(0.2)).Children(func() {
-							label(c, "Masir GUI "+versionLabel(a.version), sizeSubhead, 18, 500, p.text)
-							ui.Link(c, "GitHub · main ↗", "https://github.com/nekl3103/masir-fork/tree/main").FontSize(10).FixedLineHeight(13).FontWeight(300).TextColor(ui.Hex("#73b0ff"))
-						})
+						ui.Link(c, "GitHub · main ↗", "https://github.com/nekl3103/masir-fork/tree/main").FontSize(10).FixedLineHeight(13).FontWeight(300).TextColor(ui.Hex("#73b0ff"))
 						ui.Column(c).Gap(tw(0.5)).Children(func() {
 							mono(c, "Daemon: "+versionLabel(a.status.GetVersion()), sizeMicro, 13, 400, p.muted).MaxLines(2)
 							mono(c, "xray: v"+a.status.GetXrayVersion(), sizeMicro, 13, 400, p.muted).MaxLines(2)
 						})
 					})
-					if a.amneziaWGVersion != "" {
-						ui.Row(c).FillWidth().Children(func() {
-							mono(c, "Bundled AmneziaWG: "+versionLabel(a.amneziaWGVersion), sizeMicro, 13, 400, p.muted)
-						})
-					}
 					if a.showUpdateControl() {
 						ui.Row(c).FillWidth().Gap(tw(1)).AlignItems(ui.Center).Children(func() {
 							a.updateControl(c, p, true)
