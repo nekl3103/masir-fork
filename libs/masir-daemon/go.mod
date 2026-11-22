@@ -8,23 +8,28 @@ require (
 	github.com/Gozargah/Masir/libs/masir-proto v0.0.0
 	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828
 	github.com/ebitengine/purego v0.11.1
+	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/posthog/posthog-go v1.37.0
+	github.com/sagernet/sing v0.9.0-beta.4
+	github.com/sagernet/sing-quic v0.7.1
+	github.com/tailscale/wf v0.0.0-20240214030419-6fbb0a674ee6
 	github.com/xtls/libxray v1.261029.0
 	github.com/xtls/xray-core v1.260327.1-0.20261109052709-676eaf66f8f0
 	golang.org/x/mod v0.42.0
 	golang.org/x/sys v0.49.0
+	golang.zx2c4.com/wireguard/windows v1.1.1
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261026165753-2ffab32bce7e
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/apernet/quic-go v0.63.1-0.20261004180939-a10df75c260c // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
@@ -53,8 +58,6 @@ require (
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/refraction-networking/utls v1.8.3-0.20261108164504-a13c59ffe98b // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/sagernet/sing v0.9.0-beta.4
-	github.com/sagernet/sing-quic v0.7.1
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
@@ -64,13 +67,15 @@ require (
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20261027005312-1da6254a58cf // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
+	golang.org/x/exp/typeparams v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20261024220952-b3bc704ef0ee // indirect
-	golang.zx2c4.com/wireguard/windows v1.1.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	honnef.co/go/tools v0.4.5 // indirect
 	layeh.com/gopher-luar v1.0.11 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )

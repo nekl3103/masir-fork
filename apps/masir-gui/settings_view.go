@@ -74,7 +74,7 @@ func (a *app) advancedSection(c *ui.Context, p palette) {
 	titled(c, p, tr("ADVANCED"), nil, func() {
 		cardBox(c, p, func() {
 			hint := tr("Block VPN traffic when no VPN route is available.")
-			if runtime.GOOS == "darwin" {
+			if runtime.GOOS == "darwin" || runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 				hint = tr("Block VPN traffic on connection failure. With TUN enabled, also block network traffic if Masir stops unexpectedly.")
 			}
 			a.settingToggle(c, p, "kill-switch", tr("Kill Switch"), hint, a.killSwitchOn(), a.setKillSwitch)

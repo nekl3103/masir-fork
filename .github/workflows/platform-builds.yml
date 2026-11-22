@@ -1,0 +1,73 @@
+name: Platform builds
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: Desktop (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            platform: darwin
+          - runner: windows-latest
+            platform: windows
+          - runner: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.runner }}
+    env:
+      GUI_OS: ${{ matrix.platform }}
+      GUI_ARCHES: amd64 arm64
+      MASIR_UPDATE_PUBKEY: ${{ vars.MASIR_UPDATE_PUBKEY }}
+      MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+      MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.work
+          cache-dependency-path: "**/go.sum"
+      - name: Build
+        shell: bash
+        run: |
+          if [ -n "$MASIR_UPDATE_PUBKEY" ] && [ -n "$MINISIGN_SECRET_KEY" ]; then
+            export MASIR_SIGN_COMPONENTS=1
+          fi
+          sh scripts/build-gui.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: masir-${{ matrix.platform }}
+          path: |
+            apps/masir-gui/dist/${{ matrix.platform }}-*/masir-desktop-*.dmg
+            apps/masir-gui/dist/${{ matrix.platform }}-*/masir-desktop-setup-*.exe
+            apps/masir-gui/dist/${{ matrix.platform }}-*/masir-desktop-*.deb
+            apps/masir-gui/dist/${{ matrix.platform }}-*/masir-desktop-portable-*.tar.gz
+          if-no-files-found: error
+
+  android:
+    name: Android (arm64 and x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.work
+          cache-dependency-path: "**/go.sum"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK components
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+      - name: Build test-signed APK
+        run: make android
+      - uses: actions/upload-artifact@v7
+        with:
+          name: masir-android-test
+          path: dist/android/*.apk
+          if-no-files-found: error

@@ -66,6 +66,8 @@ func (f *Firewall) Enable(ctx context.Context, name string) error {
 	return nil
 }
 
+func (*Firewall) AllowTunnel(context.Context, string) error { return nil }
+
 func (f *Firewall) Disable(ctx context.Context) error {
 	if f.disabled {
 		return nil

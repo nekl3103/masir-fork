@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Masir Fork</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="starting">Connecting…</string>
+    <string name="connected">VPN connected</string>
+    <string name="disconnected">VPN disconnected</string>
+    <string name="source">HTTPS subscription URL, share link or configuration</string>
+    <string name="import_profiles">Import</string>
+    <string name="importing">Importing…</string>
+    <string name="no_profiles">Import a profile to connect</string>
+    <string name="clear_profiles">Remove imported profiles</string>
+    <string name="direct">Domains to route directly</string>
+    <string name="direct_example">One domain per line</string>
+    <string name="kill_switch">Block VPN traffic if its route is unavailable</string>
+    <string name="system_vpn">Android VPN settings</string>
+    <string name="system_hint">To block traffic if Masir stops, enable Always-on VPN and Block connections without VPN in Android settings.</string>
+    <string name="language">Language</string>
+    <string name="permission_denied">Android VPN permission is required.</string>
+    <string name="error">Error: %1$s</string>
+    <string name="version">Masir %1$s · AmneziaWG %2$s</string>
+    <string name="quit">Quit Masir</string>
+</resources>

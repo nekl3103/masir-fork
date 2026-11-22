@@ -14,6 +14,7 @@ import (
 
 	"github.com/Gozargah/Masir/libs/masir-core/service"
 	masird "github.com/Gozargah/Masir/libs/masir-daemon"
+	"github.com/Gozargah/Masir/libs/masir-daemon/killswitch"
 )
 
 // installService registers bin as an automatically started service serving user (a
@@ -78,6 +79,9 @@ func uninstallService() error {
 	}
 	defer s.Close()
 	stop(s)
+	if err := killswitch.Reset(context.Background()); err != nil {
+		return err
+	}
 	return s.Delete()
 }
 

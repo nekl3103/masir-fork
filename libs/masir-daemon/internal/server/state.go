@@ -316,6 +316,11 @@ func (s *Server) applyXray(ctx context.Context, p *xray.Profile, protectedTun st
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
+	if protectedTun != "" {
+		if err := s.firewall.AllowTunnel(context.WithoutCancel(ctx), protectedTun); err != nil {
+			return status.Error(codes.FailedPrecondition, "allow Kill Switch tunnel: "+err.Error())
+		}
+	}
 	if s.id.Privileged && !s.idle.Load() && protectedTun == "" {
 		if err := s.firewall.Disable(context.WithoutCancel(ctx)); err != nil {
 			return status.Error(codes.Internal, "disable Kill Switch: "+err.Error())

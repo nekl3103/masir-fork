@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Masir Fork</string>
+    <string name="connect">Подключить</string>
+    <string name="disconnect">Отключить</string>
+    <string name="starting">Подключение…</string>
+    <string name="connected">VPN подключён</string>
+    <string name="disconnected">VPN отключён</string>
+    <string name="source">Ссылка HTTPS, ссылка профиля или конфигурация</string>
+    <string name="import_profiles">Импортировать</string>
+    <string name="importing">Импорт…</string>
+    <string name="no_profiles">Импортируйте профиль для подключения</string>
+    <string name="clear_profiles">Удалить импортированные профили</string>
+    <string name="direct">Домены для прямого подключения</string>
+    <string name="direct_example">Один домен на строку</string>
+    <string name="kill_switch">Блокировать VPN-трафик при недоступном маршруте</string>
+    <string name="system_vpn">Настройки VPN в Android</string>
+    <string name="system_hint">Для защиты при остановке Masir включите постоянный VPN и блокировку подключений без VPN в настройках Android.</string>
+    <string name="language">Язык</string>
+    <string name="permission_denied">Требуется разрешение Android на VPN.</string>
+    <string name="error">Ошибка: %1$s</string>
+    <string name="version">Masir %1$s · AmneziaWG %2$s</string>
+    <string name="quit">Выйти</string>
+</resources>

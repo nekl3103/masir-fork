@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/Gozargah/Masir/libs/masir-core/service"
+	"github.com/Gozargah/Masir/libs/masir-daemon/killswitch"
 )
 
 // Restart=on-failure: a clean exit (Shutdown) leaves it stopped, a crash brings it back.
@@ -106,6 +108,9 @@ func installService(bin, user string) error {
 
 func uninstallService() error {
 	_ = exec.Command("systemctl", "disable", "--now", "masird.service").Run()
+	if err := killswitch.Reset(context.Background()); err != nil {
+		return fmt.Errorf("disable Kill Switch: %w", err)
+	}
 	if err := os.Remove(service.DefinitionPath()); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}

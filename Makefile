@@ -1,4 +1,4 @@
-.PHONY: proto proto-lint build snapshot test test-race lima-test gui gui-local gui-dev screenshots
+.PHONY: proto proto-lint build snapshot test test-race lima-test gui gui-local gui-dev android screenshots
 
 ANALYTICS_PKG := github.com/Gozargah/Masir/libs/masir-daemon/internal/analytics
 -include .env
@@ -69,6 +69,10 @@ GUI_LOCAL_OS := $(shell go env GOOS)
 GUI_LOCAL_ARCH := $(shell go env GOARCH)
 gui-local:
 	@GUI_OS="$(GUI_LOCAL_OS)" GUI_ARCHES="$(GUI_LOCAL_ARCH)" GUI_VERSION="$(GUI_VERSION)" sh scripts/build-gui.sh
+
+# Build an Android APK for ARM64 and x86_64. The SDK and NDK must be installed.
+android:
+	@sh scripts/build-android.sh
 
 # Runs the desktop app from source, rebuilding as files change.
 gui-dev: build

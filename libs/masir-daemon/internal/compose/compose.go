@@ -229,6 +229,10 @@ func Build(in Input) (Output, error) {
 			settings["name"] = in.TunName
 		}
 		switch goos {
+		case "android":
+			// VpnService owns routes and sockets protected through its platform API.
+			delete(settings, "autoOutboundsInterface")
+			delete(settings, "autoSystemRoutingTable")
 		case "windows":
 			// Windows also sends lookups to the other adapters' DNS servers, bypassing the
 			// TUN; Xray's filter keeps port 53 inside it, where it's resolved through Xray.
@@ -353,9 +357,13 @@ func Build(in Input) (Output, error) {
 // goos is runtime.GOOS; tests set it to build another system's config.
 var goos = runtime.GOOS
 
-// TunName returns a free utunN on macOS, the only names it allows; elsewhere Xray picks.
+// TunName gives the firewall a stable interface name. macOS only accepts a free utunN.
 func TunName() string {
-	if runtime.GOOS != "darwin" {
+	switch runtime.GOOS {
+	case "linux", "windows":
+		return "masir-tun"
+	case "darwin":
+	default:
 		return ""
 	}
 	used := map[string]bool{}

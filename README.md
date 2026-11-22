@@ -41,7 +41,7 @@ Masir Fork is maintained by Alexander ([@nekl3103](https://github.com/nekl3103))
 - **More VPN protocols.** Import AmneziaWG profiles, including Amnezia share links, and use them with Masir's Xray routing rules. The fork also accepts standalone `tuic://` links and Xray JSON configurations with MASQUE outbounds.
 - **Multiple sources per subscription.** Group several links under one subscription. Masir merges duplicate servers and keeps the last successful server list for each source if its refresh fails.
 - **Domain route diagnostics.** Use **Check Domain Route** from the rules panel to see the matched rule and outbound. The check also tests HTTPS access and reports the public IP through that outbound.
-- **Kill Switch.** Enable it under **Settings → Advanced** to block traffic assigned to the VPN when its route is unavailable. Explicit direct rules apply while Xray is routing traffic. On macOS, TUN mode also uses the system packet filter to guard against traffic bypassing the tunnel if the daemon stops.
+- **Kill Switch.** Enable it under **Settings → Advanced** to block traffic assigned to the VPN when its route is unavailable. Explicit direct rules apply while Xray is routing traffic. In TUN mode on macOS, Windows and Linux, a system firewall also guards against traffic bypassing the tunnel if the daemon stops. The Linux firewall requires `nftables`.
 - **Russian and English desktop interface.** Switch languages under **Settings → Language**. The app remembers your choice. The Masir and AmneziaWG versions are shown at the bottom of Settings, above **Quit Masir**.
 - **Hysteria 2 import compatibility.** Provider exports can include server-only masquerade settings. Masir removes those settings from imported client outbounds, including members of a balanced profile.
 - **Fork-specific updates.** The app and daemon use this fork's release feed. Desktop updates can install the matching signed service components bundled with the app.
@@ -337,6 +337,8 @@ Masir's daemon can run as root (for TUN), so it is built not to be a way for oth
 | System service | launchd | systemd | Windows service |
 | Updates | yes | yes | yes |
 
+The initial Android app supports Android 8.0 or later on ARM64 and x86-64. It includes profile and subscription import, VPN mode, direct domain rules, and English and Russian. Enable **Always-on VPN** and **Block connections without VPN** in Android's VPN settings for system-level blocking when the service stops.
+
 On Windows, TUN runs on the [Wintun](https://www.wintun.net) driver, built into `masir.exe` and written beside the service's copy when it starts, and Masir keeps DNS queries inside the tunnel with Xray's Windows Filtering Platform rules, so lookups can't leak through other network adapters. Windows TUN support is new: if something doesn't work on your setup, please open an issue with the output of `masir logs`.
 
 ## Building from source
@@ -348,7 +350,10 @@ git clone https://github.com/nekl3103/masir-fork.git
 cd masir-fork
 make build                  # dist/masir
 make gui-local              # desktop app for this machine in apps/masir-gui/dist/
+make android                # signed APK in dist/android/
 ```
+
+For the Android build, set `ANDROID_HOME` and use JDK 17, Android SDK Platform 35, Build Tools 35.0.0, and NDK 28.2.13676358. Local builds use a test signing key by default.
 
 For geo rules, put `geosite.dat` and `geoip.dat` next to the binary, or let `masir update geo` fetch them.
 
