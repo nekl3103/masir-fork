@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/store"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/subs"
@@ -187,4 +189,21 @@ func toPBLatency(l *subs.Latency) *pb.LatencyResult {
 		return nil
 	}
 	return &pb.LatencyResult{LatencyMs: l.Ms, Error: l.Error, TestedAtMs: unixMilli(l.TestedAt)}
+}
+
+func (s *Server) GetSubscriptionConfigJSON(ctx context.Context, req *pb.GetSubscriptionConfigJSONRequest) (*pb.GetSubscriptionConfigJSONResponse, error) {
+	cfg, err := s.subs.Config(req.SubscriptionId, req.ConfigId)
+	if err != nil {
+		return nil, toStatus(err)
+	}
+	if len(cfg.SourceJSON) == 0 {
+		return &pb.GetSubscriptionConfigJSONResponse{}, nil
+	}
+	// Remove store indentation without decoding numbers or changing source values.
+	// The inspection client allows the worst-case sixfold JSON escape expansion.
+	var compact bytes.Buffer
+	if err := json.Compact(&compact, cfg.SourceJSON); err != nil {
+		return nil, toStatus(err)
+	}
+	return &pb.GetSubscriptionConfigJSONResponse{Json: compact.String()}, nil
 }

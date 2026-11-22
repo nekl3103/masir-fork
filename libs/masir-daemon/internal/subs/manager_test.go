@@ -413,3 +413,239 @@ func TestBackgroundRefreshIsParallelWithATimeoutEach(t *testing.T) {
 		}
 	}
 }
+
+func TestFollowActiveDuplicateNames(t *testing.T) {
+	ctx := context.Background()
+	second := strings.ReplaceAll(strings.Replace(trojanWS, "Trojan%20WS", "آلمان", 1), "tr.example.com", "second.example.com")
+	third := strings.ReplaceAll(second, "second.example.com", "third.example.com")
+	p := newProvider(t, ssLink()+"\n"+second+"\n"+third)
+	m := newTestManager(t, nil)
+	s, err := m.Add(ctx, p.srv.URL, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.SetActive(s.Configs[2].Active(s.ID)); err != nil {
+		t.Fatal(err)
+	}
+	p.set(strings.ReplaceAll(ssLink()+"\n"+second+"\n"+third, "secret", "rotated"), http.StatusOK)
+	updated, err := m.Update(ctx, s.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	active, err := m.Active()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active.ConfigID != updated.Configs[2].ID {
+		t.Fatal("refresh switched from the selected third server to the other server named آلمان")
+	}
+	p.set(strings.ReplaceAll(ssLink()+"\n"+third+"\n"+second, "secret", "rotated-again"), http.StatusOK)
+	updated, err = m.Update(ctx, s.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	active, err = m.Active()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active.ConfigID != updated.Configs[1].ID {
+		t.Fatal("reordering duplicate names changed the selected server")
+	}
+}
+
+func TestActiveReplacementAmbiguousNames(t *testing.T) {
+	old := Config{ID: "old", Name: "آلمان", Outbound: json.RawMessage(`{"protocol":"trojan","settings":{"servers":[{"address":"gone.example.com","port":443}]}}`)}
+	configs := []Config{
+		{ID: "second", Name: "آلمان", Address: "second.example.com", Port: 443},
+		{ID: "third", Name: "آلمان", Address: "third.example.com", Port: 443},
+	}
+	if _, ok := activeReplacement(old.Active("sub"), configs); ok {
+		t.Fatal("ambiguous names must keep the saved selection")
+	}
+}
+
+func TestFollowActiveTransportIdentity(t *testing.T) {
+	for _, tc := range []struct{ name, selected, other, updated string }{
+		{"ws path", strings.Replace(trojanWS, "%2Fws", "%2Fchosen", 1), trojanWS, ""},
+		{"ws host", strings.Replace(trojanWS, "path=%2Fws", "path=%2Fws&host=chosen.example.com", 1), strings.Replace(trojanWS, "path=%2Fws", "path=%2Fws&host=other.example.com", 1), ""},
+		{"tcp raw alias", strings.Replace(vlessReality, "DE%20Reality", "same", 1), strings.ReplaceAll(strings.Replace(vlessReality, "DE%20Reality", "same", 1), "de.example.com", "other.example.com"), "raw"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			p := newProvider(t, tc.other+"\n"+tc.selected)
+			m := newTestManager(t, nil)
+			s, err := m.Add(ctx, p.srv.URL, "", 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := m.SetActive(s.Configs[1].Active(s.ID)); err != nil {
+				t.Fatal(err)
+			}
+			rotated := strings.ReplaceAll(strings.ReplaceAll(tc.selected, "secret", "rotated"), "b831381d", "a831381d")
+			if tc.updated != "" {
+				var docs []map[string]json.RawMessage
+				for _, c := range s.Configs {
+					var doc map[string]json.RawMessage
+					if err := json.Unmarshal(c.Outbound, &doc); err != nil {
+						t.Fatal(err)
+					}
+					doc["tag"], _ = json.Marshal(c.Name)
+					docs = append(docs, doc)
+				}
+				raw, err := json.Marshal(docs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				body := strings.ReplaceAll(string(raw), "b831381d", "a831381d")
+				body = strings.ReplaceAll(body, `"network":"tcp"`, `"network":"raw"`)
+				p.set(body, http.StatusOK)
+			}
+			if tc.updated == "" {
+				p.set(tc.other+"\n"+rotated, http.StatusOK)
+			}
+			u, err := m.Update(ctx, s.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			a, err := m.Active()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if a.ConfigID != u.Configs[1].ID {
+				t.Fatal("did not follow the selected endpoint after credential rotation")
+			}
+		})
+	}
+}
+
+func TestActiveReplacementWebSocketDefaults(t *testing.T) {
+	makeConfig := func(id, path, host, sni string) Config {
+		raw := fmt.Sprintf(`{"protocol":"trojan","settings":{"servers":[{"address":"server.example.com","port":443,"password":%q}]},"streamSettings":{"network":"ws","security":"tls","tlsSettings":{"serverName":%q},"wsSettings":{"path":%q,"host":%q}}}`, id, sni, path, host)
+		return Config{ID: id, Name: "آلمان", Address: "server.example.com", Port: 443, Outbound: json.RawMessage(raw)}
+	}
+	for _, tc := range []struct{ name, oldPath, newPath, oldHost, newHost, sni string }{
+		{"TLS host fallback", "/ws", "/ws", "", "a.example.com", "a.example.com"},
+		{"destination host fallback", "/ws", "/ws", "", "server.example.com", ""},
+		{"explicit host precedence", "/ws", "/ws", "a.example.com", "a.example.com", "different.example.com"},
+		{"relative path", "/ws", "ws", "a.example.com", "a.example.com", ""},
+		{"empty path", "", "/", "a.example.com", "a.example.com", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			old := makeConfig("old", tc.oldPath, tc.oldHost, tc.sni)
+			want := makeConfig("rotated", tc.newPath, tc.newHost, tc.sni)
+			other := makeConfig("other", "/ws", "", "b.example.com")
+			if tc.name == "TLS host fallback" {
+				t.Run("uppercase TLS", func(t *testing.T) {
+					upper := func(c Config) Config {
+						c.Outbound = bytes.ReplaceAll(c.Outbound, []byte(`"security":"tls"`), []byte(`"security":"TLS"`))
+						return c
+					}
+					wrong := makeConfig("wrong", "/ws", "server.example.com", tc.sni)
+					got, ok := activeReplacement(upper(old).Active("sub"), []Config{upper(wrong), upper(want)})
+					if !ok || got.ID != want.ID {
+						t.Fatalf("uppercase TLS replacement = %q, %v", got.ID, ok)
+					}
+					got, ok = activeReplacement(upper(old).Active("sub"), []Config{wrong, want})
+					if !ok || got.ID != want.ID {
+						t.Fatalf("mixed-case TLS replacement = %q, %v", got.ID, ok)
+					}
+				})
+			}
+			got, ok := activeReplacement(old.Active("sub"), []Config{other, want})
+			if !ok || got.ID != want.ID {
+				t.Fatalf("replacement = %q, %v; want rotated", got.ID, ok)
+			}
+		})
+	}
+}
+
+func TestSharedSourceIsStoredOnce(t *testing.T) {
+	var outbounds []json.RawMessage
+	for i := range 1000 {
+		outbounds = append(outbounds, json.RawMessage(fmt.Sprintf(`{"tag":"node-%d","protocol":"vless","settings":{"address":"node-%d.example.com","port":443,"id":"00000000-0000-4000-8000-000000000001","encryption":"none"},"streamSettings":{"security":"tls"}}`, i, i)))
+	}
+	source, err := json.Marshal(map[string]any{"notes": strings.Repeat("x", 1<<20), "outbounds": outbounds})
+	if err != nil {
+		t.Fatal(err)
+	}
+	configs, err := Parse(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(configs) != 1000 {
+		t.Fatalf("configs: %d", len(configs))
+	}
+	m, err := NewManager(filepath.Join(t.TempDir(), "subscriptions"), filepath.Join(t.TempDir(), "active.json"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sub := &Subscription{ID: "0123456789abcdef", Configs: configs}
+	if err := m.save(sub); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(m.path(sub.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) > 3*len(source) {
+		t.Fatalf("duplicated source storage: input=%d saved=%d", len(source), len(data))
+	}
+	loaded, err := m.Get(sub.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(loaded.SourceDocuments) != 1 {
+		t.Fatalf("stored sources: %d", len(loaded.SourceDocuments))
+	}
+	for i, cfg := range loaded.Configs {
+		if cfg.ID != configs[i].ID || cfg.SourceRef == "" || !bytes.Equal(cfg.SourceJSON, loaded.SourceDocuments[cfg.SourceRef]) {
+			t.Fatalf("source or runtime ID lost for config %d", i)
+		}
+		if &cfg.SourceJSON[0] != &loaded.Configs[0].SourceJSON[0] {
+			t.Fatal("loaded configs do not share source bytes")
+		}
+	}
+	if err := m.save(loaded); err != nil {
+		t.Fatal(err)
+	}
+	again, err := m.Get(sub.ID)
+	if err != nil || len(again.SourceDocuments) != 1 {
+		t.Fatalf("resave lost shared source: %v", err)
+	}
+}
+
+func TestSharedDocumentsWithGroupedAndUpstreamSubscriptions(t *testing.T) {
+	m, err := NewManager(filepath.Join(t.TempDir(), "subscriptions"), filepath.Join(t.TempDir(), "active.json"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := json.RawMessage(`{"outbounds":[]}`)
+	ref := sourceID(doc)
+	id := "0123456789abcdef"
+	cfg := Config{ID: "node", SourceRef: ref, SourceJSON: doc}
+	sub := &Subscription{ID: id, Configs: []Config{cfg}, Sources: []Source{{URL: "https://example.com", Configs: []Config{cfg}}}}
+	if err := m.save(sub); err != nil {
+		t.Fatal(err)
+	}
+	s, err := m.Get(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.SourceDocuments) != 1 || len(s.Sources) != 1 ||
+		len(s.Configs[0].SourceJSON) == 0 || len(s.Sources[0].Configs[0].SourceJSON) == 0 {
+		t.Fatalf("source document not restored for both config lists: %+v", s)
+	}
+
+	// Upstream stores documents under the key this fork used for a list of feeds.
+	legacy := fmt.Sprintf(`{"id":%q,"url":"https://example.com","sources":{%q:%s},"configs":[{"id":"node","sourceRef":%q}]}`, id, ref, doc, ref)
+	if err := os.WriteFile(m.path(id), []byte(legacy), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old, err := m.Get(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(old.Sources) != 0 || len(old.SourceDocuments) != 1 || !bytes.Equal(old.Configs[0].SourceJSON, doc) {
+		t.Fatalf("upstream document was lost: %+v", old)
+	}
+}

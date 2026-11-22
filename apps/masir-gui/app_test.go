@@ -41,6 +41,7 @@ type fakeDaemon struct {
 	releaseErr                           error
 	updateJob                            *pb.UpdateJob
 	updateStream                         *fakeUpdateStream
+	sourceConfigJSON                     string
 	xrayConfig                           string
 	restartVersion                       string
 	checkAge                             time.Duration // the last check's max age
@@ -1006,4 +1007,9 @@ func TestFailPreservesPrefixForNonConnectionErrors(t *testing.T) {
 	if a.notices[0] != want {
 		t.Fatalf("notice = %q, want %q", a.notices[0], want)
 	}
+}
+
+func (f *fakeDaemon) GetSubscriptionConfigJSON(_ context.Context, r *pb.GetSubscriptionConfigJSONRequest, _ ...grpc.CallOption) (*pb.GetSubscriptionConfigJSONResponse, error) {
+	f.log("config json " + r.SubscriptionId + "/" + r.ConfigId)
+	return &pb.GetSubscriptionConfigJSONResponse{Json: f.sourceConfigJSON}, nil
 }

@@ -297,10 +297,19 @@ func Build(in Input) (Output, error) {
 		delete(defaultRoute, "balancerTag")
 		defaultRoute["outboundTag"] = proxy.tag
 	}
-	rules = append(rules,
-		obj{"ruleTag": "masir-lan-bypass", "ip": privateRanges, "outboundTag": "direct"},
-		defaultRoute,
-	)
+	rules = append(rules, obj{"ruleTag": "masir-lan-bypass", "ip": privateRanges, "outboundTag": "direct"})
+	if in.Proxy {
+		// Unmatched traffic on the mixed proxy port must use the selection.
+		proxyFallback := "block"
+		if hasProxy {
+			proxyFallback = proxy.tag
+		}
+		rules = append(rules, obj{
+			"ruleTag": "masir-proxy-default-route", "inboundTag": []string{ProxyInboundTag},
+			"network": "tcp,udp", "outboundTag": proxyFallback,
+		})
+	}
+	rules = append(rules, defaultRoute)
 
 	// IP rules only see IP destinations under AsIs; resolve unmatched domains so they apply too.
 	strategy := "AsIs"

@@ -269,7 +269,11 @@ func (a *app) saveRule() {
 			}
 			updated := &pb.RoutingRule{RuleTag: name, RuleJson: match, Target: target, Disabled: disabled}
 			if original == "" {
-				a.rules.rules = append([]*pb.RoutingRule{updated}, a.rules.rules...)
+				// A revision refresh may already have loaded the new rule while
+				// AddRouting's completion was waiting on the UI queue.
+				if a.ruleByTag(name) == nil {
+					a.rules.rules = append([]*pb.RoutingRule{updated}, a.rules.rules...)
+				}
 			} else {
 				for i, r := range a.rules.rules {
 					if r.RuleTag == original {

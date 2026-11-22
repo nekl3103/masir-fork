@@ -8,10 +8,12 @@ import (
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
 )
 
-// ruleMenu is the menu a right-click opens on a rule: which rule, and where in the window.
+// ruleMenu holds a rule or config context menu and its position in the window.
 type ruleMenu struct {
 	open          bool
 	confirmRemove bool
+	configKey     serverKey
+	config        *pb.SubscriptionConfig
 	tag           string
 	x, y          float32
 }
@@ -21,16 +23,20 @@ const menuWidth = 124
 // menuHeight: three items, the divider, the gaps and the padding.
 var menuHeight = 3*(2*tw(1.5)+12) + 0.5 + 2*tw(0.5) + 2*tw(0.5) + 2*tw(1) + 2
 
-// contextMenu draws the rule menu above everything: a small panel of the design's look, with
+// contextMenu draws the menu above everything: a small panel of the design's look, with
 // the items of a macOS menu — the accent color under the pointer, red for removing.
 func (a *app) contextMenu(c *ui.Context, p palette) {
 	if !a.menu.open {
 		return
 	}
 	var rule = a.ruleByTag(a.menu.tag)
-	if rule == nil {
+	if rule == nil && a.menu.config == nil {
 		a.menu.open = false
 		return
+	}
+	height := menuHeight
+	if a.menu.config != nil {
+		height = 2*tw(1) + 2*tw(1.5) + 12
 	}
 	ui.Overlay(c, func() {
 		// Anything pressed outside closes it.
@@ -40,7 +46,7 @@ func (a *app) contextMenu(c *ui.Context, p palette) {
 		}
 
 		x := clamp32(a.menu.x, 4, panelWidth-menuWidth-4)
-		y := clamp32(a.menu.y, 4, a.restHeight()-menuHeight-4)
+		y := clamp32(a.menu.y, 4, a.restHeight()-height-4)
 		m := ui.Column(c.Key("menu")).Absolute().Left(x).Top(y).Width(menuWidth).Padding(tw(1)).Gap(tw(0.5)).
 			Radius(10).Background(p.elevated).Border(1, p.borderDefault)
 		if p.dark {
@@ -52,6 +58,13 @@ func (a *app) contextMenu(c *ui.Context, p palette) {
 		in := m.AnimateWith("in", 1, 100*time.Millisecond, easeApp)
 		m.Opacity(in).Scale(0.95+0.05*in, 0.95+0.05*in)
 		m.Children(func() {
+			if cfg := a.menu.config; cfg != nil {
+				if a.menuItem(c, p, "open-json", tr("Open JSON"), iconTerminal, false) {
+					a.menu.open = false
+					a.fetchServerConfig(a.menu.configKey)
+				}
+				return
+			}
 			toggle := tr("Disable Rule")
 			if rule.Disabled {
 				toggle = tr("Enable Rule")

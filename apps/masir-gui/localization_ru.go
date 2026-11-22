@@ -2,14 +2,15 @@ package main
 
 // Russian strings are keyed by their English source text.
 var russianText = map[string]string{
-	"ms":                          " мс",
-	"\nClick to check connection": "\nНажмите, чтобы проверить соединение",
-	" (Excluding ":                " (кроме: ",
-	" choices":                    ": варианты",
-	" configs":                    " ",
-	" entries":                    " записей",
-	" icon":                       ": значок",
-	" input":                      ": ввод",
+	"There's no JSON for this config": "JSON для этого профиля недоступен",
+	"ms":                              " мс",
+	"\nClick to check connection":     "\nНажмите, чтобы проверить соединение",
+	" (Excluding ":                    " (кроме: ",
+	" choices":                        ": варианты",
+	" configs":                        " ",
+	" entries":                        " записей",
+	" icon":                           ": значок",
+	" input":                          ": ввод",
 	" installed. Update geo data in Settings.": ". Обновите геоданные в настройках.",
 	" left":                                  " осталось",
 	" options":                               ": параметры",

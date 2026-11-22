@@ -3,6 +3,7 @@ package subs
 import (
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -187,6 +188,15 @@ func TestParsePreservesBalancedProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var original, preserved any
+	json.Unmarshal([]byte(input), &original)
+	if len(configs) > 0 {
+		json.Unmarshal(configs[0].SourceJSON, &preserved)
+	}
+	if !reflect.DeepEqual(original, preserved) {
+		t.Fatal("complete provider JSON was not preserved")
+	}
+
 	if len(configs) != 1 {
 		t.Fatalf("got %d configurations, want one", len(configs))
 	}
@@ -258,5 +268,24 @@ func TestProfileRejectsInvalidRulePredicate(t *testing.T) {
 		if configs, err := Parse(body); err == nil || len(configs) != 0 {
 			t.Error("invalid route was admitted")
 		}
+	}
+}
+
+func TestParsePreservesTopLevelFieldsWithoutRouting(t *testing.T) {
+	const outbound = `{"tag":"node","protocol":"trojan","settings":{"servers":[{"address":"example.com","port":443,"password":"test"}]},"streamSettings":{"security":"tls"}}`
+	bare, err := Parse([]byte(`{"outbounds":[` + outbound + `]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := `{"dns":{"servers":["1.1.1.1"]},"observatory":{"subjectSelector":["node"]},"outbounds":[` + outbound + `]}`
+	configs, err := Parse([]byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(configs) != 1 || string(configs[0].SourceJSON) != input {
+		t.Fatal("lost top-level provider fields")
+	}
+	if configs[0].ID != bare[0].ID || string(configs[0].Outbound) != string(bare[0].Outbound) {
+		t.Fatal("source preservation changed runtime selection")
 	}
 }

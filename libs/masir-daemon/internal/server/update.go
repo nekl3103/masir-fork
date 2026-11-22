@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -150,8 +152,8 @@ func (s *Server) masirTask(force bool, clientBinary, trigger string, deferRestar
 }
 
 // clientBinary accepts the CLI's path only when this daemon has the rights to replace
-// it, it looks like a masir binary, and only root can change it: a copy the user owns
-// could be swapped for a link while root writes it, so the CLI replaces that one itself.
+// it, only root can change it, and it matches the daemon's own executable. Other
+// copies are left for the CLI to replace with the user's permission.
 func (s *Server) clientBinary(path string) string {
 	if !s.id.Privileged || path == "" || s.id.UID < 0 {
 		return "" // Windows has no numeric owner to preserve; the CLI elevates itself
@@ -164,7 +166,44 @@ func (s *Server) clientBinary(path string) string {
 	if err != nil || !fi.Mode().IsRegular() || !rootControlled(path) {
 		return ""
 	}
+	trusted := executable()
+	if !rootControlled(trusted) || !sameBinary(path, trusted) {
+		return ""
+	}
 	return path
+}
+
+// sameBinary accepts only an existing copy of the daemon, not an arbitrary file
+// named masir supplied over RPC. Both paths must be root-controlled by the caller.
+func sameBinary(a, b string) bool {
+	hash := func(path string) ([sha256.Size]byte, error) {
+		f, err := os.Open(path)
+		if err != nil {
+			return [sha256.Size]byte{}, err
+		}
+		defer f.Close()
+		h := sha256.New()
+		if _, err := io.Copy(h, f); err != nil {
+			return [sha256.Size]byte{}, err
+		}
+		var sum [sha256.Size]byte
+		copy(sum[:], h.Sum(nil))
+		return sum, nil
+	}
+	ai, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	bi, err := os.Stat(b)
+	if err != nil || !bi.Mode().IsRegular() || ai.Size() != bi.Size() {
+		return false
+	}
+	ha, err := hash(a)
+	if err != nil {
+		return false
+	}
+	hb, err := hash(b)
+	return err == nil && ha == hb
 }
 
 // geoTask installs fresh geo data, but only after checking that every enabled rule can be

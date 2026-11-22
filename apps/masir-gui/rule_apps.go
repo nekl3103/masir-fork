@@ -26,6 +26,8 @@ const (
 	ruleAppsManual
 )
 
+const ruleAppLineBreakError = "Choose paths without line breaks. No paths were added."
+
 type ruleAppItem struct {
 	group         string
 	app           ruleApp
@@ -58,7 +60,7 @@ func (a *app) loadRuleApps() {
 			}
 			a.ruleApps.all = apps
 			a.ruleApps.loading = false
-			if err != nil {
+			if err != nil && a.ruleApps.err == "" {
 				a.ruleApps.err = err.Error()
 			}
 			a.filterRuleApps()
@@ -150,8 +152,25 @@ func (a *app) filterRuleApps() {
 	}
 }
 
+// A selected path must fit on one line of the manual process editor.
+func (st *ruleAppState) checkSelectionPaths(paths ...string) bool {
+	for _, path := range paths {
+		if strings.ContainsAny(path, "\r\n") {
+			st.err = ruleAppLineBreakError
+			return false
+		}
+	}
+	if len(paths) > 0 && st.err == ruleAppLineBreakError {
+		st.err = ""
+	}
+	return true
+}
+
 func (a *app) addPickedRuleApps(paths []string, directory bool) {
 	st := &a.ruleApps
+	if !st.checkSelectionPaths(paths...) {
+		return
+	}
 	if st.custom == nil {
 		st.custom = map[string]ruleApp{}
 	}
@@ -318,7 +337,7 @@ func (a *app) ruleAppRow(c *ui.Context, p palette, v ruleApp) {
 			ui.Icon(c, iconCheck).FontSize(12).TextColor(p.accent).Shrink(0)
 		}
 	})
-	if row.Changed() {
+	if row.Changed() && (!selected || st.checkSelectionPaths(v.Path)) {
 		st.selected[v.Path] = selected
 		a.applyRuleApps()
 	}

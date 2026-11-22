@@ -19,16 +19,21 @@ import (
 
 // Config is one server a subscription provides.
 type Config struct {
-	ID       string           `json:"id"`
-	Name     string           `json:"name"`
-	Protocol string           `json:"protocol"`
-	Address  string           `json:"address,omitempty"`
-	Port     int              `json:"port,omitempty"`
-	Network  string           `json:"network,omitempty"`
-	Security string           `json:"security,omitempty"`
-	Outbound json.RawMessage  `json:"outbound"` // untagged; whoever uses it picks the tag
-	Profile  *OutboundProfile `json:"profile,omitempty"`
-	Latency  *Latency         `json:"latency,omitempty"`
+	// SourceRef identifies the shared document in Subscription.SourceDocuments on disk.
+	SourceRef string `json:"sourceRef,omitempty"`
+	// SourceJSON retains the complete imported entry before runtime normalization.
+	// Share links retain their converted outbound JSON. Older saved configs omit it.
+	SourceJSON json.RawMessage  `json:"sourceJson,omitempty"`
+	ID         string           `json:"id"`
+	Name       string           `json:"name"`
+	Protocol   string           `json:"protocol"`
+	Address    string           `json:"address,omitempty"`
+	Port       int              `json:"port,omitempty"`
+	Network    string           `json:"network,omitempty"`
+	Security   string           `json:"security,omitempty"`
+	Outbound   json.RawMessage  `json:"outbound"` // untagged; whoever uses it picks the tag
+	Profile    *OutboundProfile `json:"profile,omitempty"`
+	Latency    *Latency         `json:"latency,omitempty"`
 }
 
 // OutboundProfile preserves the provider's tag space and routing order.
@@ -104,9 +109,11 @@ func cleanSubscriptionText(text string) string {
 }
 
 type namedOutbound struct {
-	name    string
-	raw     map[string]json.RawMessage
-	profile *OutboundProfile
+	source    json.RawMessage
+	sourceRef string
+	name      string
+	raw       map[string]json.RawMessage
+	profile   *OutboundProfile
 }
 
 func parseJSONArray(text string) ([]namedOutbound, error) {
@@ -133,7 +140,7 @@ func parseJSONObject(raw json.RawMessage) ([]namedOutbound, error) {
 		return nil, fmt.Errorf("subscription JSON: %w", err)
 	}
 	if _, ok := obj["protocol"]; ok {
-		return []namedOutbound{{raw: obj}}, nil
+		return []namedOutbound{{raw: obj, source: append(json.RawMessage(nil), raw...)}}, nil
 	}
 	outsRaw, ok := obj["outbounds"]
 	if !ok {
@@ -148,10 +155,22 @@ func parseJSONObject(raw json.RawMessage) ([]namedOutbound, error) {
 	_, hasInbounds := obj["inbounds"]
 	_, hasRouting := obj["routing"]
 	if !hasRemarks && !hasInbounds && !hasRouting {
+		var entries []json.RawMessage
+		if err := json.Unmarshal(outsRaw, &entries); err != nil {
+			return nil, err
+		}
+		sharedRef := ""
+		if len(obj) > 1 {
+			sharedRef = sourceID(raw)
+		}
 		var list []namedOutbound
-		for _, o := range outs {
+		for i, o := range outs {
 			if !utilityProtocols[str(o["protocol"])] {
-				list = append(list, namedOutbound{raw: o})
+				source := entries[i]
+				if len(obj) > 1 {
+					source = raw
+				}
+				list = append(list, namedOutbound{raw: o, source: source, sourceRef: sharedRef})
 			}
 		}
 		return list, nil
@@ -165,7 +184,7 @@ func parseJSONObject(raw json.RawMessage) ([]namedOutbound, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []namedOutbound{{name: str(obj["remarks"]), raw: main, profile: profile}}, nil
+	return []namedOutbound{{name: str(obj["remarks"]), raw: main, profile: profile, source: append(json.RawMessage(nil), raw...)}}, nil
 }
 
 // pickMainOutbound prefers the outbound tagged "proxy", else the first real server.
@@ -268,6 +287,10 @@ func protocolOutbound(kind, name string, config any) namedOutbound {
 
 func newConfig(n namedOutbound) (Config, error) {
 	o := n.raw
+	source := n.source
+	if len(source) == 0 {
+		source, _ = json.Marshal(o)
+	}
 	name := n.name
 	if name == "" {
 		name = str(o["tag"])
@@ -285,11 +308,13 @@ func newConfig(n namedOutbound) (Config, error) {
 	}
 
 	c := Config{
-		ID:       configID(outbound),
-		Name:     strings.TrimSpace(name),
-		Protocol: str(o["protocol"]),
-		Outbound: outbound,
-		Profile:  n.profile,
+		SourceJSON: source,
+		SourceRef:  n.sourceRef,
+		ID:         configID(outbound),
+		Name:       strings.TrimSpace(name),
+		Protocol:   str(o["protocol"]),
+		Outbound:   outbound,
+		Profile:    n.profile,
 	}
 	if c.Profile != nil {
 		encoded, err := json.Marshal(c.Profile)
@@ -405,3 +430,5 @@ func anyInt(v any) int {
 	}
 	return 0
 }
+
+func sourceID(raw json.RawMessage) string { return fmt.Sprintf("%x", sha256.Sum256(raw)) }

@@ -610,7 +610,7 @@ func replaceFile(src, dst string) error {
 	// Keep the version being replaced beside it, so `masir daemon rollback` can put it
 	// back if the new one doesn't start. The copy is overwritten by the next update.
 	if fi, err := os.Stat(dst); err == nil && fi.Mode().IsRegular() {
-		if err := copyFile(dst, dst+".previous", 0o755); err != nil {
+		if err := copyFile(dst, dst+".previous", 0o600); err != nil {
 			return fmt.Errorf("save the previous %s: %w", dst, err)
 		}
 	}

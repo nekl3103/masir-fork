@@ -19,57 +19,58 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DaemonService_GetXrayVersion_FullMethodName          = "/masir.daemon.v1.DaemonService/GetXrayVersion"
-	DaemonService_GetXrayConfig_FullMethodName           = "/masir.daemon.v1.DaemonService/GetXrayConfig"
-	DaemonService_GetStatus_FullMethodName               = "/masir.daemon.v1.DaemonService/GetStatus"
-	DaemonService_WatchStatus_FullMethodName             = "/masir.daemon.v1.DaemonService/WatchStatus"
-	DaemonService_Shutdown_FullMethodName                = "/masir.daemon.v1.DaemonService/Shutdown"
-	DaemonService_Restart_FullMethodName                 = "/masir.daemon.v1.DaemonService/Restart"
-	DaemonService_StreamLogs_FullMethodName              = "/masir.daemon.v1.DaemonService/StreamLogs"
-	DaemonService_WatchTraffic_FullMethodName            = "/masir.daemon.v1.DaemonService/WatchTraffic"
-	DaemonService_GetOutboundTraffic_FullMethodName      = "/masir.daemon.v1.DaemonService/GetOutboundTraffic"
-	DaemonService_CaptureEvent_FullMethodName            = "/masir.daemon.v1.DaemonService/CaptureEvent"
-	DaemonService_TestLatency_FullMethodName             = "/masir.daemon.v1.DaemonService/TestLatency"
-	DaemonService_CancelLatencyTest_FullMethodName       = "/masir.daemon.v1.DaemonService/CancelLatencyTest"
-	DaemonService_GetSettings_FullMethodName             = "/masir.daemon.v1.DaemonService/GetSettings"
-	DaemonService_UpdateSettings_FullMethodName          = "/masir.daemon.v1.DaemonService/UpdateSettings"
-	DaemonService_SetPower_FullMethodName                = "/masir.daemon.v1.DaemonService/SetPower"
-	DaemonService_SetFallback_FullMethodName             = "/masir.daemon.v1.DaemonService/SetFallback"
-	DaemonService_SetTunEnabled_FullMethodName           = "/masir.daemon.v1.DaemonService/SetTunEnabled"
-	DaemonService_ListRoutingRules_FullMethodName        = "/masir.daemon.v1.DaemonService/ListRoutingRules"
-	DaemonService_AddRouting_FullMethodName              = "/masir.daemon.v1.DaemonService/AddRouting"
-	DaemonService_RemoveRouting_FullMethodName           = "/masir.daemon.v1.DaemonService/RemoveRouting"
-	DaemonService_AlterRouting_FullMethodName            = "/masir.daemon.v1.DaemonService/AlterRouting"
-	DaemonService_MoveRouting_FullMethodName             = "/masir.daemon.v1.DaemonService/MoveRouting"
-	DaemonService_TestRouting_FullMethodName             = "/masir.daemon.v1.DaemonService/TestRouting"
-	DaemonService_CheckRules_FullMethodName              = "/masir.daemon.v1.DaemonService/CheckRules"
-	DaemonService_SetRuleEnabled_FullMethodName          = "/masir.daemon.v1.DaemonService/SetRuleEnabled"
-	DaemonService_ListInbounds_FullMethodName            = "/masir.daemon.v1.DaemonService/ListInbounds"
-	DaemonService_AddInbound_FullMethodName              = "/masir.daemon.v1.DaemonService/AddInbound"
-	DaemonService_RemoveInbound_FullMethodName           = "/masir.daemon.v1.DaemonService/RemoveInbound"
-	DaemonService_AlterInbound_FullMethodName            = "/masir.daemon.v1.DaemonService/AlterInbound"
-	DaemonService_ListOutbounds_FullMethodName           = "/masir.daemon.v1.DaemonService/ListOutbounds"
-	DaemonService_AddOutbound_FullMethodName             = "/masir.daemon.v1.DaemonService/AddOutbound"
-	DaemonService_RemoveOutbound_FullMethodName          = "/masir.daemon.v1.DaemonService/RemoveOutbound"
-	DaemonService_AlterOutbound_FullMethodName           = "/masir.daemon.v1.DaemonService/AlterOutbound"
-	DaemonService_ListSubscriptions_FullMethodName       = "/masir.daemon.v1.DaemonService/ListSubscriptions"
-	DaemonService_GetSubscription_FullMethodName         = "/masir.daemon.v1.DaemonService/GetSubscription"
-	DaemonService_AddSubscription_FullMethodName         = "/masir.daemon.v1.DaemonService/AddSubscription"
-	DaemonService_AlterSubscription_FullMethodName       = "/masir.daemon.v1.DaemonService/AlterSubscription"
-	DaemonService_RemoveSubscription_FullMethodName      = "/masir.daemon.v1.DaemonService/RemoveSubscription"
-	DaemonService_UpdateSubscription_FullMethodName      = "/masir.daemon.v1.DaemonService/UpdateSubscription"
-	DaemonService_TestSubscriptionLatency_FullMethodName = "/masir.daemon.v1.DaemonService/TestSubscriptionLatency"
-	DaemonService_SelectConfig_FullMethodName            = "/masir.daemon.v1.DaemonService/SelectConfig"
-	DaemonService_GetActiveConfig_FullMethodName         = "/masir.daemon.v1.DaemonService/GetActiveConfig"
-	DaemonService_CheckUpdate_FullMethodName             = "/masir.daemon.v1.DaemonService/CheckUpdate"
-	DaemonService_IgnoreUpdate_FullMethodName            = "/masir.daemon.v1.DaemonService/IgnoreUpdate"
-	DaemonService_ImportDesktopUpdate_FullMethodName     = "/masir.daemon.v1.DaemonService/ImportDesktopUpdate"
-	DaemonService_StartUpdate_FullMethodName             = "/masir.daemon.v1.DaemonService/StartUpdate"
-	DaemonService_PauseUpdate_FullMethodName             = "/masir.daemon.v1.DaemonService/PauseUpdate"
-	DaemonService_ResumeUpdate_FullMethodName            = "/masir.daemon.v1.DaemonService/ResumeUpdate"
-	DaemonService_StopUpdate_FullMethodName              = "/masir.daemon.v1.DaemonService/StopUpdate"
-	DaemonService_WatchUpdate_FullMethodName             = "/masir.daemon.v1.DaemonService/WatchUpdate"
-	DaemonService_ListGeoCategories_FullMethodName       = "/masir.daemon.v1.DaemonService/ListGeoCategories"
+	DaemonService_GetXrayVersion_FullMethodName            = "/masir.daemon.v1.DaemonService/GetXrayVersion"
+	DaemonService_GetXrayConfig_FullMethodName             = "/masir.daemon.v1.DaemonService/GetXrayConfig"
+	DaemonService_GetStatus_FullMethodName                 = "/masir.daemon.v1.DaemonService/GetStatus"
+	DaemonService_WatchStatus_FullMethodName               = "/masir.daemon.v1.DaemonService/WatchStatus"
+	DaemonService_Shutdown_FullMethodName                  = "/masir.daemon.v1.DaemonService/Shutdown"
+	DaemonService_Restart_FullMethodName                   = "/masir.daemon.v1.DaemonService/Restart"
+	DaemonService_StreamLogs_FullMethodName                = "/masir.daemon.v1.DaemonService/StreamLogs"
+	DaemonService_WatchTraffic_FullMethodName              = "/masir.daemon.v1.DaemonService/WatchTraffic"
+	DaemonService_GetOutboundTraffic_FullMethodName        = "/masir.daemon.v1.DaemonService/GetOutboundTraffic"
+	DaemonService_CaptureEvent_FullMethodName              = "/masir.daemon.v1.DaemonService/CaptureEvent"
+	DaemonService_TestLatency_FullMethodName               = "/masir.daemon.v1.DaemonService/TestLatency"
+	DaemonService_CancelLatencyTest_FullMethodName         = "/masir.daemon.v1.DaemonService/CancelLatencyTest"
+	DaemonService_GetSettings_FullMethodName               = "/masir.daemon.v1.DaemonService/GetSettings"
+	DaemonService_UpdateSettings_FullMethodName            = "/masir.daemon.v1.DaemonService/UpdateSettings"
+	DaemonService_SetPower_FullMethodName                  = "/masir.daemon.v1.DaemonService/SetPower"
+	DaemonService_SetFallback_FullMethodName               = "/masir.daemon.v1.DaemonService/SetFallback"
+	DaemonService_SetTunEnabled_FullMethodName             = "/masir.daemon.v1.DaemonService/SetTunEnabled"
+	DaemonService_ListRoutingRules_FullMethodName          = "/masir.daemon.v1.DaemonService/ListRoutingRules"
+	DaemonService_AddRouting_FullMethodName                = "/masir.daemon.v1.DaemonService/AddRouting"
+	DaemonService_RemoveRouting_FullMethodName             = "/masir.daemon.v1.DaemonService/RemoveRouting"
+	DaemonService_AlterRouting_FullMethodName              = "/masir.daemon.v1.DaemonService/AlterRouting"
+	DaemonService_MoveRouting_FullMethodName               = "/masir.daemon.v1.DaemonService/MoveRouting"
+	DaemonService_TestRouting_FullMethodName               = "/masir.daemon.v1.DaemonService/TestRouting"
+	DaemonService_CheckRules_FullMethodName                = "/masir.daemon.v1.DaemonService/CheckRules"
+	DaemonService_SetRuleEnabled_FullMethodName            = "/masir.daemon.v1.DaemonService/SetRuleEnabled"
+	DaemonService_ListInbounds_FullMethodName              = "/masir.daemon.v1.DaemonService/ListInbounds"
+	DaemonService_AddInbound_FullMethodName                = "/masir.daemon.v1.DaemonService/AddInbound"
+	DaemonService_RemoveInbound_FullMethodName             = "/masir.daemon.v1.DaemonService/RemoveInbound"
+	DaemonService_AlterInbound_FullMethodName              = "/masir.daemon.v1.DaemonService/AlterInbound"
+	DaemonService_ListOutbounds_FullMethodName             = "/masir.daemon.v1.DaemonService/ListOutbounds"
+	DaemonService_AddOutbound_FullMethodName               = "/masir.daemon.v1.DaemonService/AddOutbound"
+	DaemonService_RemoveOutbound_FullMethodName            = "/masir.daemon.v1.DaemonService/RemoveOutbound"
+	DaemonService_AlterOutbound_FullMethodName             = "/masir.daemon.v1.DaemonService/AlterOutbound"
+	DaemonService_ListSubscriptions_FullMethodName         = "/masir.daemon.v1.DaemonService/ListSubscriptions"
+	DaemonService_GetSubscription_FullMethodName           = "/masir.daemon.v1.DaemonService/GetSubscription"
+	DaemonService_GetSubscriptionConfigJSON_FullMethodName = "/masir.daemon.v1.DaemonService/GetSubscriptionConfigJSON"
+	DaemonService_AddSubscription_FullMethodName           = "/masir.daemon.v1.DaemonService/AddSubscription"
+	DaemonService_AlterSubscription_FullMethodName         = "/masir.daemon.v1.DaemonService/AlterSubscription"
+	DaemonService_RemoveSubscription_FullMethodName        = "/masir.daemon.v1.DaemonService/RemoveSubscription"
+	DaemonService_UpdateSubscription_FullMethodName        = "/masir.daemon.v1.DaemonService/UpdateSubscription"
+	DaemonService_TestSubscriptionLatency_FullMethodName   = "/masir.daemon.v1.DaemonService/TestSubscriptionLatency"
+	DaemonService_SelectConfig_FullMethodName              = "/masir.daemon.v1.DaemonService/SelectConfig"
+	DaemonService_GetActiveConfig_FullMethodName           = "/masir.daemon.v1.DaemonService/GetActiveConfig"
+	DaemonService_CheckUpdate_FullMethodName               = "/masir.daemon.v1.DaemonService/CheckUpdate"
+	DaemonService_IgnoreUpdate_FullMethodName              = "/masir.daemon.v1.DaemonService/IgnoreUpdate"
+	DaemonService_ImportDesktopUpdate_FullMethodName       = "/masir.daemon.v1.DaemonService/ImportDesktopUpdate"
+	DaemonService_StartUpdate_FullMethodName               = "/masir.daemon.v1.DaemonService/StartUpdate"
+	DaemonService_PauseUpdate_FullMethodName               = "/masir.daemon.v1.DaemonService/PauseUpdate"
+	DaemonService_ResumeUpdate_FullMethodName              = "/masir.daemon.v1.DaemonService/ResumeUpdate"
+	DaemonService_StopUpdate_FullMethodName                = "/masir.daemon.v1.DaemonService/StopUpdate"
+	DaemonService_WatchUpdate_FullMethodName               = "/masir.daemon.v1.DaemonService/WatchUpdate"
+	DaemonService_ListGeoCategories_FullMethodName         = "/masir.daemon.v1.DaemonService/ListGeoCategories"
 )
 
 // DaemonServiceClient is the client API for DaemonService service.
@@ -131,6 +132,7 @@ type DaemonServiceClient interface {
 	// subscriptions
 	ListSubscriptions(ctx context.Context, in *ListSubscriptionsRequest, opts ...grpc.CallOption) (*ListSubscriptionsResponse, error)
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*GetSubscriptionResponse, error)
+	GetSubscriptionConfigJSON(ctx context.Context, in *GetSubscriptionConfigJSONRequest, opts ...grpc.CallOption) (*GetSubscriptionConfigJSONResponse, error)
 	AddSubscription(ctx context.Context, in *AddSubscriptionRequest, opts ...grpc.CallOption) (*AddSubscriptionResponse, error)
 	AlterSubscription(ctx context.Context, in *AlterSubscriptionRequest, opts ...grpc.CallOption) (*AlterSubscriptionResponse, error)
 	RemoveSubscription(ctx context.Context, in *RemoveSubscriptionRequest, opts ...grpc.CallOption) (*RemoveSubscriptionResponse, error)
@@ -547,6 +549,16 @@ func (c *daemonServiceClient) GetSubscription(ctx context.Context, in *GetSubscr
 	return out, nil
 }
 
+func (c *daemonServiceClient) GetSubscriptionConfigJSON(ctx context.Context, in *GetSubscriptionConfigJSONRequest, opts ...grpc.CallOption) (*GetSubscriptionConfigJSONResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSubscriptionConfigJSONResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetSubscriptionConfigJSON_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *daemonServiceClient) AddSubscription(ctx context.Context, in *AddSubscriptionRequest, opts ...grpc.CallOption) (*AddSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddSubscriptionResponse)
@@ -787,6 +799,7 @@ type DaemonServiceServer interface {
 	// subscriptions
 	ListSubscriptions(context.Context, *ListSubscriptionsRequest) (*ListSubscriptionsResponse, error)
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*GetSubscriptionResponse, error)
+	GetSubscriptionConfigJSON(context.Context, *GetSubscriptionConfigJSONRequest) (*GetSubscriptionConfigJSONResponse, error)
 	AddSubscription(context.Context, *AddSubscriptionRequest) (*AddSubscriptionResponse, error)
 	AlterSubscription(context.Context, *AlterSubscriptionRequest) (*AlterSubscriptionResponse, error)
 	RemoveSubscription(context.Context, *RemoveSubscriptionRequest) (*RemoveSubscriptionResponse, error)
@@ -930,6 +943,9 @@ func (UnimplementedDaemonServiceServer) ListSubscriptions(context.Context, *List
 }
 func (UnimplementedDaemonServiceServer) GetSubscription(context.Context, *GetSubscriptionRequest) (*GetSubscriptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSubscription not implemented")
+}
+func (UnimplementedDaemonServiceServer) GetSubscriptionConfigJSON(context.Context, *GetSubscriptionConfigJSONRequest) (*GetSubscriptionConfigJSONResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSubscriptionConfigJSON not implemented")
 }
 func (UnimplementedDaemonServiceServer) AddSubscription(context.Context, *AddSubscriptionRequest) (*AddSubscriptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddSubscription not implemented")
@@ -1609,6 +1625,24 @@ func _DaemonService_GetSubscription_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DaemonService_GetSubscriptionConfigJSON_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSubscriptionConfigJSONRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).GetSubscriptionConfigJSON(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_GetSubscriptionConfigJSON_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).GetSubscriptionConfigJSON(ctx, req.(*GetSubscriptionConfigJSONRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DaemonService_AddSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -2006,6 +2040,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubscription",
 			Handler:    _DaemonService_GetSubscription_Handler,
+		},
+		{
+			MethodName: "GetSubscriptionConfigJSON",
+			Handler:    _DaemonService_GetSubscriptionConfigJSON_Handler,
 		},
 		{
 			MethodName: "AddSubscription",

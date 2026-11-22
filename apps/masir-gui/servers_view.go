@@ -288,6 +288,8 @@ func (a *app) serverListRow(c *ui.Context, p palette, s server, action string, s
 		AlignItems(ui.Center).Justify(ui.SpaceBetween).Shrink(0)
 	bg := ui.Color{}
 	switch {
+	case a.menu.open && a.menu.config != nil && a.menu.configKey == s.key:
+		bg = p.cardHover
 	case selected && pinned:
 		bg = p.pinnedSurface
 	case selected:
@@ -308,6 +310,11 @@ func (a *app) serverListRow(c *ui.Context, p palette, s server, action string, s
 	})
 	if probe {
 		a.testServers(s)
+	}
+	if row.RightClicked() {
+		px, py, _ := row.PointerPosition()
+		b := row.Bounds()
+		a.menu = ruleMenu{open: true, configKey: s.key, config: s.cfg, x: b.X + px, y: b.Y + py}
 	}
 	return row.Clicked() && !probe
 }

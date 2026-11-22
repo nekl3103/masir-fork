@@ -44,18 +44,19 @@ var (
 )
 
 type Subscription struct {
-	ID                      string    `json:"id"`
-	Name                    string    `json:"name"`
-	URL                     string    `json:"url"`
-	CustomIntervalMinutes   uint32    `json:"customIntervalMinutes,omitempty"` // 0 means automatic
-	ProviderIntervalMinutes uint32    `json:"providerIntervalMinutes,omitempty"`
-	CreatedAt               time.Time `json:"createdAt"`
-	UpdatedAt               time.Time `json:"updatedAt,omitzero"` // last successful fetch
-	CheckedAt               time.Time `json:"checkedAt,omitzero"` // last attempt
-	LastError               string    `json:"lastError,omitempty"`
-	Usage                   *Usage    `json:"usage,omitempty"`
-	Configs                 []Config  `json:"configs"`
-	Sources                 []Source  `json:"sources,omitempty"`
+	ID                      string                     `json:"id"`
+	Name                    string                     `json:"name"`
+	URL                     string                     `json:"url"`
+	CustomIntervalMinutes   uint32                     `json:"customIntervalMinutes,omitempty"` // 0 means automatic
+	ProviderIntervalMinutes uint32                     `json:"providerIntervalMinutes,omitempty"`
+	CreatedAt               time.Time                  `json:"createdAt"`
+	UpdatedAt               time.Time                  `json:"updatedAt,omitzero"` // last successful fetch
+	CheckedAt               time.Time                  `json:"checkedAt,omitzero"` // last attempt
+	LastError               string                     `json:"lastError,omitempty"`
+	Usage                   *Usage                     `json:"usage,omitempty"`
+	Configs                 []Config                   `json:"configs"`
+	Sources                 []Source                   `json:"sources,omitempty"`
+	SourceDocuments         map[string]json.RawMessage `json:"sourceDocuments,omitempty"`
 }
 
 type Latency struct {
@@ -555,8 +556,81 @@ func (m *Manager) refreshDue(ctx context.Context) {
 	debug.FreeOSMemory()
 }
 
+// activeReplacement follows rotated settings without confusing servers that share a
+// display name. Ambiguous replacements keep the saved copy running.
+func activeReplacement(a Active, configs []Config) (Config, bool) {
+	type endpoint struct {
+		Protocol       string
+		Settings       json.RawMessage
+		StreamSettings struct {
+			Network, Security string
+			TLSSettings       struct{ ServerName string }
+			WSSettings        struct {
+				Path, Host string
+				Headers    struct{ Host string }
+			}
+		}
+	}
+	normalize := func(e *endpoint) {
+		e.StreamSettings.Security = strings.ToLower(e.StreamSettings.Security)
+		switch e.StreamSettings.Network {
+		case "", "raw", "tcp":
+			e.StreamSettings.Network = "tcp"
+		case "ws", "websocket":
+			e.StreamSettings.Network = "ws"
+		}
+		serverName := e.StreamSettings.TLSSettings.ServerName
+		e.StreamSettings.TLSSettings.ServerName = ""
+		if e.StreamSettings.Network != "ws" {
+			return
+		}
+		ws := &e.StreamSettings.WSSettings
+		if ws.Host == "" {
+			ws.Host = ws.Headers.Host
+		}
+		if ws.Host == "" && e.StreamSettings.Security == "tls" {
+			ws.Host = serverName
+		}
+		if ws.Host == "" {
+			ws.Host, _ = serverAddress(e.Settings)
+		}
+		if !strings.HasPrefix(ws.Path, "/") {
+			ws.Path = "/" + ws.Path
+		}
+		ws.Headers.Host = ""
+	}
+	var old endpoint
+	if err := json.Unmarshal(a.Outbound, &old); err != nil {
+		return Config{}, false
+	}
+	normalize(&old)
+	address, port := serverAddress(old.Settings)
+	var named, matched []Config
+	for _, c := range configs {
+		if c.Name != a.Name {
+			continue
+		}
+		named = append(named, c)
+		var next endpoint
+		if json.Unmarshal(c.Outbound, &next) != nil {
+			continue
+		}
+		normalize(&next)
+		if address != "" && c.Address == address && c.Port == port && next.Protocol == old.Protocol && next.StreamSettings == old.StreamSettings {
+			matched = append(matched, c)
+		}
+	}
+	if len(matched) == 1 {
+		return matched[0], true
+	}
+	if len(named) == 1 {
+		return named[0], true
+	}
+	return Config{}, false
+}
+
 // configsChanged runs after s got new configs. If the selection's ID is gone but a
-// config with its name remains, the selection moves to it; if nothing matches, the
+// unambiguous replacement remains, the selection moves to it; otherwise the
 // copy keeps running. Then OnChange lets pinned rules re-resolve.
 func (m *Manager) configsChanged(ctx context.Context, s *Subscription) {
 	m.mu.Lock()
@@ -564,12 +638,9 @@ func (m *Manager) configsChanged(ctx context.Context, s *Subscription) {
 	if err == nil && a.SubscriptionID == s.ID && a.ConfigID != "" {
 		if _, ok := s.config(a.ConfigID); !ok {
 			moved := false
-			for _, c := range s.Configs {
-				if c.Name == a.Name {
-					err = m.writeActive(c.Active(s.ID))
-					moved = err == nil
-					break
-				}
+			if c, ok := activeReplacement(a, s.Configs); ok {
+				err = m.writeActive(c.Active(s.ID))
+				moved = err == nil
 			}
 			switch {
 			case moved:
@@ -680,15 +751,67 @@ func (m *Manager) load(id string) (*Subscription, error) {
 		return nil, err
 	}
 	var s Subscription
-	if err := json.Unmarshal(raw, &s); err != nil {
+	stored := struct {
+		*Subscription
+		Sources json.RawMessage `json:"sources"`
+	}{Subscription: &s}
+	if err := json.Unmarshal(raw, &stored); err != nil {
 		return nil, fmt.Errorf("subscription %s: %w", id, err)
+	}
+	if len(stored.Sources) > 0 {
+		// A fork file stores feeds in "sources"; the upstream version uses it for
+		// original JSON documents. Keep both formats readable on upgrade.
+		switch stored.Sources[0] {
+		case '{':
+			err = json.Unmarshal(stored.Sources, &s.SourceDocuments)
+		default:
+			err = json.Unmarshal(stored.Sources, &s.Sources)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("subscription %s sources: %w", id, err)
+		}
+	}
+	restoreDocuments := func(configs []Config) {
+		for i := range configs {
+			c := &configs[i]
+			if len(c.SourceJSON) == 0 && c.SourceRef != "" {
+				c.SourceJSON = s.SourceDocuments[c.SourceRef]
+			}
+		}
+	}
+	restoreDocuments(s.Configs)
+	for _, source := range s.Sources {
+		restoreDocuments(source.Configs)
 	}
 	return &s, nil
 }
 
 // save expects m.mu to be held.
 func (m *Manager) save(s *Subscription) error {
-	raw, err := json.MarshalIndent(s, "", "  ")
+	// Project both the merged list and each feed's cache into shared references.
+	persisted := *s
+	persisted.SourceDocuments = make(map[string]json.RawMessage)
+	storeDocuments := func(configs []Config) []Config {
+		stored := slices.Clone(configs)
+		for i := range stored {
+			c := &stored[i]
+			if len(c.SourceJSON) == 0 {
+				continue
+			}
+			if c.SourceRef == "" {
+				c.SourceRef = sourceID(c.SourceJSON)
+			}
+			persisted.SourceDocuments[c.SourceRef] = c.SourceJSON
+			c.SourceJSON = nil
+		}
+		return stored
+	}
+	persisted.Configs = storeDocuments(s.Configs)
+	persisted.Sources = slices.Clone(s.Sources)
+	for i := range persisted.Sources {
+		persisted.Sources[i].Configs = storeDocuments(persisted.Sources[i].Configs)
+	}
+	raw, err := json.MarshalIndent(&persisted, "", "  ")
 	if err != nil {
 		return err
 	}

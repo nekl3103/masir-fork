@@ -15,6 +15,7 @@ import (
 
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
 	"github.com/egoist/mygo"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -440,4 +441,61 @@ func (a *app) setDisconnectOnQuit(on bool) {
 	}
 	a.disconnectQuit = on
 	a.saveGUISettings()
+}
+
+// openServerConfig opens a private snapshot; edits never change the subscription.
+func (a *app) openServerConfig(raw string) {
+	a.async(func() {
+		if raw == "" {
+			a.post(func() { a.notifyWarning(tr("There's no JSON for this config")) })
+			return
+		}
+		var pretty bytes.Buffer
+		if err := json.Indent(&pretty, []byte(raw), "", "  "); err != nil {
+			a.post(func() { a.fail(tr("Couldn't read the config: "), err) })
+			return
+		}
+		pretty.WriteByte('\n')
+		file, err := createConfigExportTemp("")
+		if err != nil {
+			a.post(func() { a.fail(tr("Couldn't write the config: "), err) })
+			return
+		}
+		path := file.Name()
+		_, writeErr := file.Write(pretty.Bytes())
+		closeErr := file.Close()
+		if writeErr == nil {
+			writeErr = closeErr
+		}
+		if writeErr != nil {
+			os.Remove(path)
+			a.post(func() { a.fail(tr("Couldn't write the config: "), writeErr) })
+			return
+		}
+		if err := openFileIn(path); err != nil {
+			os.Remove(path)
+			a.post(func() { a.fail(tr("Couldn't open the config: "), err) })
+		}
+	})
+}
+
+// The importer accepts 10 MiB. Persistence can expand HTML characters sixfold;
+// 64 MiB covers the compact escaped source plus RPC overhead without re-encoding.
+func (a *app) fetchServerConfig(key serverKey) {
+	a.async(func() {
+		res, err := callRPC(func(ctx context.Context) (*pb.GetSubscriptionConfigJSONResponse, error) {
+			return a.d.GetSubscriptionConfigJSON(ctx, &pb.GetSubscriptionConfigJSONRequest{SubscriptionId: key.sub, ConfigId: key.cfg}, grpc.MaxCallRecvMsgSize(64<<20))
+		})
+		a.post(func() {
+			if err != nil {
+				a.fail(tr("Couldn't read the config: "), err)
+				return
+			}
+			if res.GetJson() == "" {
+				a.notifyWarning("Update the daemon and refresh this subscription to view its complete JSON config")
+				return
+			}
+			a.openServerConfig(res.GetJson())
+		})
+	})
 }

@@ -133,6 +133,70 @@ func TestPickedRulePathsStayOutOfInstalledCatalog(t *testing.T) {
 		t.Fatal("picked folder became an installed application")
 	}
 }
+
+func TestRulePickerRejectsPathsWithLineBreaks(t *testing.T) {
+	for _, tc := range []struct {
+		name, invalid string
+		directory     bool
+	}{
+		{"folder with LF", "\n", true},
+		{"application with CR", "\r", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := newTestApp(ukServers())
+			a.newRule()
+			appPickerTestFixture(a)
+			const existing = "/Applications/Browser.app/"
+			a.ruleApps.selected[existing] = true
+			a.applyRuleApps()
+			before, err := a.rulePage.matchJSON()
+			if err != nil {
+				t.Fatal(err)
+			}
+			const valid = "/Tools/Notes"
+			a.openRuleDialog = func(mygo.OpenDialogOptions) ([]string, error) {
+				return []string{valid, tc.invalid}, nil
+			}
+			a.pickRuleApp(tc.directory)
+			if a.ruleApps.err == "" || len(a.ruleApps.selected) != 1 || !a.ruleApps.selected[existing] || len(a.ruleApps.custom) != 0 {
+				t.Fatal("invalid selection did not leave the existing selection intact with an error")
+			}
+			if after, err := a.rulePage.matchJSON(); err != nil || after != before {
+				t.Fatalf("invalid selection changed the rule JSON: %s (%v)", after, err)
+			}
+			a.openRuleDialog = func(mygo.OpenDialogOptions) ([]string, error) {
+				return []string{valid}, nil
+			}
+			a.pickRuleApp(tc.directory)
+			want := valid
+			if tc.directory {
+				want += "/"
+			}
+			if a.ruleApps.err != "" || !a.ruleApps.selected[want] {
+				t.Fatal("valid retry did not clear the error and add the selected path")
+			}
+		})
+	}
+}
+
+func TestInstalledRuleAppSelectionRejectsLineBreaks(t *testing.T) {
+	a := newTestApp(ukServers())
+	a.newRule()
+	appPickerTestFixture(a)
+	a.ruleApps.all[0].Path += "\n"
+	a.filterRuleApps()
+	tt := tester(a)
+	tt.Frame()
+	tt.Frame()
+	if err := tt.Click("Select Browser"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.ruleApps.err == "" || len(a.ruleApps.selected) != 0 || a.rulePage.values["process"] != "" {
+		t.Fatal("installed path with a line break entered the rule")
+	}
+}
+
 func TestRuleAccordionContentIsFullWidth(t *testing.T) {
 	for _, key := range []string{"process", "domain", "destination"} {
 		t.Run(key, func(t *testing.T) {

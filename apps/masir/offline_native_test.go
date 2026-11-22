@@ -223,6 +223,9 @@ func TestOfflineNativeServiceLifecycle(t *testing.T) {
 	nativeWaitVersion(t, nativeNewVersion)
 	nativeAssertProtectedInstallation(t)
 	previous, err := os.ReadFile(service.BinaryPath() + ".previous")
+	if runtime.GOOS != "windows" {
+		previous, err = exec.Command("sudo", "-n", "cat", service.BinaryPath()+".previous").Output()
+	}
 	if err != nil || sha256.Sum256(previous) != sha256.Sum256(oldBytes) {
 		t.Fatalf("rollback binary not preserved: %v", err)
 	}

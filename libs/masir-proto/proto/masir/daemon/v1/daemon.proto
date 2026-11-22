@@ -58,6 +58,7 @@ service DaemonService {
   // subscriptions
   rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse);
   rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse);
+  rpc GetSubscriptionConfigJSON(GetSubscriptionConfigJSONRequest) returns (GetSubscriptionConfigJSONResponse);
   rpc AddSubscription(AddSubscriptionRequest) returns (AddSubscriptionResponse);
   rpc AlterSubscription(AlterSubscriptionRequest) returns (AlterSubscriptionResponse);
   rpc RemoveSubscription(RemoveSubscriptionRequest) returns (RemoveSubscriptionResponse);
@@ -678,3 +679,10 @@ message ImportDesktopUpdateRequest {
   bytes data = 4;
 }
 message ImportDesktopUpdateResponse { string version = 1; }
+
+// Fetch complete imported JSON only on explicit inspection, not in list responses.
+message GetSubscriptionConfigJSONRequest {
+  string subscription_id = 1;
+  string config_id = 2;
+}
+message GetSubscriptionConfigJSONResponse { string json = 1; }

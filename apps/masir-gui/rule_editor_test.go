@@ -658,3 +658,32 @@ func TestRuleNameFollowsConditionsAndTarget(t *testing.T) {
 		t.Fatal("missing less conditions control")
 	}
 }
+
+func TestRuleCreateAfterRefreshShowsOneRow(t *testing.T) {
+	f := &ruleEditorDaemon{fakeDaemon: ukServers()}
+	a := newTestApp(f.fakeDaemon)
+	a.d = f
+	a.newRule()
+	a.rulePage.name = "new"
+	a.rulePage.values["domain"] = "domain:example.com"
+	var pending []func()
+	a.post = func(fn func()) { pending = append(pending, fn) }
+	a.saveRule()
+	// The daemon's revision refresh reaches the UI before AddRouting's completion.
+	f.rules = append([]*pb.RoutingRule{{RuleTag: "new", RuleJson: `{"domain":["domain:example.com"]}`, Target: "proxy"}}, f.rules...)
+	a.refreshLists()
+	if len(pending) != 2 {
+		t.Fatalf("expected save and refresh completions, got %d", len(pending))
+	}
+	pending[1]()
+	pending[0]()
+	rows := 0
+	for _, item := range a.ruleListItems(a.rules.rules) {
+		if item.rule != nil && item.rule.RuleTag == "new" {
+			rows++
+		}
+	}
+	if rows != 1 {
+		t.Fatalf("new rule appears in %d UI rows; storage contains one", rows)
+	}
+}

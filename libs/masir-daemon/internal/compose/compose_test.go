@@ -121,7 +121,7 @@ func TestBuildFollowsMasirTS(t *testing.T) {
 		t.Errorf("outbounds = %v", got)
 	}
 	want := []string{"masir-anti-loop", "masir-dns-bootstrap", "masir-dns-hijack", "masir-dns-upstream",
-		"ir-direct", "pin", "masir-lan-bypass", "masir-default-route"}
+		"ir-direct", "pin", "masir-lan-bypass", "masir-proxy-default-route", "masir-default-route"}
 	if got := tags(c.Routing.Rules, "ruleTag"); !slices.Equal(got, want) {
 		t.Errorf("rules = %v\nwant    %v", got, want)
 	}
@@ -205,9 +205,49 @@ func TestBuildWithoutSelection(t *testing.T) {
 	if slices.Contains(tags(c.Outbounds, "tag"), "proxy") {
 		t.Error("no selection, yet a proxy outbound")
 	}
+	if r := ruleByTag(c, "masir-proxy-default-route"); r["outboundTag"] != "block" {
+		t.Errorf("mixed proxy fallback without selection = %v, want block", r)
+	}
 	for _, rr := range out.Rules {
 		if !rr.FellBack {
 			t.Errorf("rule %s should report falling back", rr.Rule.Tag)
+		}
+	}
+}
+
+func TestMixedProxyFallbackWithDirectMode(t *testing.T) {
+	st := testState(t)
+	st.Settings.Fallback = store.FallbackDirect
+	if err := st.AddRule("allow-direct", []byte(`{"domain":["full:direct.test"]}`), store.Target{Kind: store.TargetDirect}, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.AddRule("deny", []byte(`{"domain":["full:blocked.test"]}`), store.Target{Kind: store.TargetBlock}, false); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := build(t, Input{State: st, Proxy: true, Active: json.RawMessage(activeOut)})
+	p, err := xray.ParseProfile(out.Config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	core := xray.New("")
+	defer core.Close()
+	ctx := context.Background()
+	if err := core.Apply(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		query xray.RouteQuery
+		want  string
+	}{
+		{xray.RouteQuery{InboundTag: ProxyInboundTag, Domain: "other.test", Port: 443}, "proxy"},
+		{xray.RouteQuery{InboundTag: ProxyInboundTag, Domain: "other.test", Port: 443, Network: "udp"}, "proxy"},
+		{xray.RouteQuery{InboundTag: ProxyInboundTag, Domain: "direct.test", Port: 443}, "direct"},
+		{xray.RouteQuery{InboundTag: ProxyInboundTag, Domain: "blocked.test", Port: 443}, "block"},
+		{xray.RouteQuery{InboundTag: TunInboundTag, Domain: "other.test", Port: 443}, "direct"},
+	} {
+		got, err := core.TestRoute(ctx, tt.query)
+		if err != nil || !got.Matched || got.OutboundTag != tt.want {
+			t.Errorf("route %+v = %+v, %v; want %s", tt.query, got, err, tt.want)
 		}
 	}
 }
