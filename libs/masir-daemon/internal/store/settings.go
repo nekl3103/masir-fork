@@ -18,6 +18,7 @@ const (
 type Settings struct {
 	Power         bool     `json:"power"`
 	Tun           bool     `json:"tun"`
+	KillSwitch    bool     `json:"killSwitch"`
 	AlwaysOnProxy bool     `json:"alwaysOnProxy"`
 	Fallback      Fallback `json:"fallback"`
 	AllowLAN      bool     `json:"allowLan"`

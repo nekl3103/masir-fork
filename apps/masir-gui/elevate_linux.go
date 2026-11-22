@@ -20,7 +20,7 @@ import (
 
 func elevateDaemon(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to start the daemon from")
+		return errors.New(tr("no masir executable to start the daemon from"))
 	}
 	abs, err := filepath.Abs(bin)
 	if err != nil {
@@ -39,7 +39,7 @@ func elevateDaemon(bin string) error {
 // no prompt from then on.
 func installService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to install the service from")
+		return errors.New(tr("no masir executable to install the service from"))
 	}
 	abs, err := filepath.Abs(bin)
 	if err != nil {
@@ -53,7 +53,7 @@ func installService(bin string) error {
 
 func uninstallService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to remove the service with")
+		return errors.New(tr("no masir executable to remove the service with"))
 	}
 	abs, err := filepath.Abs(bin)
 	if err != nil {
@@ -71,7 +71,7 @@ func uninstallService(bin string) error {
 // daemon of its own while a service is installed.
 func startService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to start the service with")
+		return errors.New(tr("no masir executable to start the service with"))
 	}
 	abs, err := filepath.Abs(bin)
 	if err != nil {
@@ -92,7 +92,7 @@ func pkexec(argv ...string) ([]byte, error) { return pkexecAnnounced(nil, argv..
 // line is a signal, not output. stdout and stderr share one pipe, as CombinedOutput did.
 func pkexecAnnounced(authorized func(), argv ...string) ([]byte, error) {
 	if _, err := exec.LookPath("pkexec"); err != nil {
-		return nil, &elevationError{kind: elevationUnavailable, msg: "this desktop has no pkexec to ask for root; run `sudo masir daemon enable` once"}
+		return nil, &elevationError{kind: elevationUnavailable, msg: tr("this desktop has no pkexec to ask for root; run `sudo masir daemon enable` once")}
 	}
 	cmd := exec.Command("pkexec", argv...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
@@ -147,7 +147,7 @@ func classifyPkexec(exit int, output string) *elevationError {
 	e := &elevationError{kind: elevationFailed, code: exit, msg: "root permission wasn't granted: " + output}
 	switch {
 	case exit == 126:
-		e.kind, e.msg = elevationCancelled, "permission wasn't granted"
+		e.kind, e.msg = elevationCancelled, tr("permission wasn't granted")
 	case exit == 127 && strings.Contains(output, "authentication agent"):
 		e.kind = elevationUnavailable
 	case exit == 127:

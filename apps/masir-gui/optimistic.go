@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -60,6 +61,7 @@ type pending struct {
 	rulesEnabled opt[bool]
 	active       opt[serverKey]
 	alwaysOn     opt[bool]
+	killSwitch   opt[bool]
 	allowLAN     opt[bool]
 	doh          opt[string]
 	logLevel     opt[string]
@@ -89,6 +91,7 @@ func (p *pending) caughtUp() {
 	p.rulesEnabled.caughtUp()
 	p.active.caughtUp()
 	p.alwaysOn.caughtUp()
+	p.killSwitch.caughtUp()
 	p.allowLAN.caughtUp()
 	p.doh.caughtUp()
 	p.logLevel.caughtUp()
@@ -125,6 +128,13 @@ func (a *app) alwaysOnProxy() bool {
 		return v
 	}
 	return a.status.GetSettings().GetAlwaysOnProxy()
+}
+
+func (a *app) killSwitchOn() bool {
+	if v, ok := a.pend.killSwitch.get(); ok {
+		return v
+	}
+	return a.status.GetSettings().GetKillSwitch()
 }
 
 func (a *app) allowLAN() bool {
@@ -261,7 +271,7 @@ func (a *app) mutate(failPrefix string, settle, revert func(), call func(ctx con
 
 func (a *app) setFallback(f pb.Fallback) {
 	a.pend.fallback.set(f)
-	a.mutate("Couldn't change the mode: ", a.pend.fallback.done, a.pend.fallback.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't change the mode: "), a.pend.fallback.done, a.pend.fallback.revert, func(ctx context.Context) error {
 		_, err := a.d.SetFallback(ctx, &pb.SetFallbackRequest{Fallback: f})
 		return err
 	})
@@ -273,7 +283,7 @@ func (a *app) selectServer(s server) {
 	a.query = ""
 	a.requestHeight() // the list folds away, and the window with it
 	a.pend.active.set(s.key)
-	a.mutate("Couldn't select that server: ", a.pend.active.done, a.pend.active.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't select that server: "), a.pend.active.done, a.pend.active.revert, func(ctx context.Context) error {
 		_, err := a.d.SelectConfig(ctx, &pb.SelectConfigRequest{SubscriptionId: s.key.sub, ConfigId: s.key.cfg, Reason: "interactive"})
 		return err
 	})
@@ -281,7 +291,7 @@ func (a *app) selectServer(s server) {
 
 func (a *app) setRulesEnabled(on bool) {
 	a.pend.rulesEnabled.set(on)
-	a.mutate("Couldn't change the rules: ", a.pend.rulesEnabled.done, a.pend.rulesEnabled.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't change the rules: "), a.pend.rulesEnabled.done, a.pend.rulesEnabled.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{RulesEnabled: &on})
 		return err
 	})
@@ -290,7 +300,7 @@ func (a *app) setRulesEnabled(on bool) {
 func (a *app) setRuleEnabled(tag string, on bool) {
 	o := perRule(a.pend.ruleEnabled, tag)
 	o.set(on)
-	a.mutate("Couldn't change that rule: ", o.done, o.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't change that rule: "), o.done, o.revert, func(ctx context.Context) error {
 		_, err := a.d.SetRuleEnabled(ctx, &pb.SetRuleEnabledRequest{RuleTags: []string{tag}, Enabled: on})
 		return err
 	})
@@ -300,15 +310,26 @@ func (a *app) removeRule(tag string) {
 	o := perRule(a.pend.ruleRemoved, tag)
 	o.set(true)
 	delete(a.swipes, tag)
-	a.mutate("Couldn't remove that rule: ", o.done, o.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't remove that rule: "), o.done, o.revert, func(ctx context.Context) error {
 		_, err := a.d.RemoveRouting(ctx, &pb.RemoveRoutingRequest{RuleTag: tag})
+		return err
+	})
+}
+
+func (a *app) setKillSwitch(on bool) {
+	a.pend.killSwitch.set(on)
+	a.mutate(tr("Couldn't change Kill Switch: "), a.pend.killSwitch.done, a.pend.killSwitch.revert, func(ctx context.Context) error {
+		res, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{KillSwitch: &on})
+		if err == nil && (res.GetSettings() == nil || res.GetSettings().KillSwitch == nil) {
+			return errors.New(tr("update the Masir service in Settings to use Kill Switch"))
+		}
 		return err
 	})
 }
 
 func (a *app) setAlwaysOnProxy(on bool) {
 	a.pend.alwaysOn.set(on)
-	a.mutate("Couldn't save the setting: ", a.pend.alwaysOn.done, a.pend.alwaysOn.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.alwaysOn.done, a.pend.alwaysOn.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{AlwaysOnProxy: &on})
 		return err
 	})
@@ -316,7 +337,7 @@ func (a *app) setAlwaysOnProxy(on bool) {
 
 func (a *app) setAllowLAN(on bool) {
 	a.pend.allowLAN.set(on)
-	a.mutate("Couldn't save the setting: ", a.pend.allowLAN.done, a.pend.allowLAN.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.allowLAN.done, a.pend.allowLAN.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{AllowLan: &on})
 		return err
 	})
@@ -324,7 +345,7 @@ func (a *app) setAllowLAN(on bool) {
 
 func (a *app) setDoH(url string) {
 	a.pend.doh.set(url)
-	a.mutate("Couldn't save the setting: ", a.pend.doh.done, a.pend.doh.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.doh.done, a.pend.doh.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{DohDns: &url})
 		return err
 	})
@@ -332,7 +353,7 @@ func (a *app) setDoH(url string) {
 
 func (a *app) setLogLevel(level string) {
 	a.pend.logLevel.set(level)
-	a.mutate("Couldn't save the setting: ", a.pend.logLevel.done, a.pend.logLevel.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.logLevel.done, a.pend.logLevel.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{XrayLogLevel: &level})
 		return err
 	})
@@ -340,7 +361,7 @@ func (a *app) setLogLevel(level string) {
 
 func (a *app) setGateway(gateway string) {
 	a.pend.gateway.set(gateway)
-	a.mutate("Couldn't save the setting: ", a.pend.gateway.done, a.pend.gateway.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.gateway.done, a.pend.gateway.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{TunGateway: &gateway})
 		return err
 	})
@@ -348,7 +369,7 @@ func (a *app) setGateway(gateway string) {
 
 func (a *app) setSubInterval(minutes uint32) {
 	a.pend.subInterval.set(minutes)
-	a.mutate("Couldn't save the setting: ", a.pend.subInterval.done, a.pend.subInterval.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.subInterval.done, a.pend.subInterval.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{SubIntervalMinutes: &minutes})
 		return err
 	})
@@ -356,7 +377,7 @@ func (a *app) setSubInterval(minutes uint32) {
 
 func (a *app) setAnalytics(on bool) {
 	a.pend.analytics.set(on)
-	a.mutate("Couldn't save the setting: ", a.pend.analytics.done, a.pend.analytics.revert, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), a.pend.analytics.done, a.pend.analytics.revert, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{Analytics: &on})
 		return err
 	})

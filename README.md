@@ -3,12 +3,12 @@
 <h1>
   <img src="apps/masir-gui/resources/icon.png" width="50px" alt="Masir logo">
   <br>
-  Masir
+  Masir Fork
 </h1>
 
 <p>
-  <a href="https://github.com/Gozargah/Masir/releases/latest"><img src="https://img.shields.io/github/v/release/Gozargah/Masir?style=flat&amp;color=00b884" alt="Latest release"></a>
-  <a href="https://github.com/Gozargah/Masir/actions/workflows/ci.yml"><img src="https://github.com/Gozargah/Masir/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/nekl3103/masir-fork/releases"><img src="https://img.shields.io/github/v/release/nekl3103/masir-fork?style=flat&amp;color=00b884" alt="Fork releases"></a>
+  <a href="https://github.com/nekl3103/masir-fork/actions/workflows/ci.yml"><img src="https://github.com/nekl3103/masir-fork/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="#building-from-source"><img src="https://img.shields.io/badge/Go-1.27%2B-00ADD8?style=flat&amp;logo=go&amp;logoColor=white" alt="Go 1.27 or newer"></a>
   <a href="#platform-support"><img src="https://img.shields.io/badge/macOS_%C2%B7_Linux_%C2%B7_Windows-30363d?style=flat" alt="macOS, Linux and Windows"></a>
 </p>
@@ -21,7 +21,8 @@
 </p>
 
 <p>
-  <a href="https://github.com/Gozargah/Masir/releases/latest"><strong>Download Masir</strong></a>
+  <a href="https://github.com/nekl3103/masir-fork/releases"><strong>Download Masir Fork</strong></a>
+  &nbsp;·&nbsp; <a href="#whats-new-in-the-fork">Fork improvements</a>
   &nbsp;·&nbsp; <a href="#quick-start">Quick start</a>
   &nbsp;·&nbsp; <a href="#routing-rules">Routing rules</a>
   &nbsp;·&nbsp; <a href="#building-from-source">Build from source</a>
@@ -32,6 +33,18 @@
 </p>
 
 </div>
+
+Masir Fork is maintained by Alexander ([@nekl3103](https://github.com/nekl3103)). The original Masir was created by [Gozarman](https://github.com/gozarman) and developed with the contributors to [Gozargah/Masir](https://github.com/Gozargah/Masir).
+
+## What's new in the fork
+
+- **More VPN protocols.** Import AmneziaWG profiles, including Amnezia share links, and use them with Masir's Xray routing rules. The fork also accepts standalone `tuic://` links and Xray JSON configurations with MASQUE outbounds.
+- **Multiple sources per subscription.** Group several links under one subscription. Masir merges duplicate servers and keeps the last successful server list for each source if its refresh fails.
+- **Domain route diagnostics.** Use **Check Domain Route** from the rules panel to see the matched rule and outbound. The check also tests HTTPS access and reports the public IP through that outbound.
+- **Kill Switch.** Enable it under **Settings → Advanced** to block traffic assigned to the VPN when its route is unavailable. Explicit direct rules apply while Xray is routing traffic. On macOS, TUN mode also uses the system packet filter to guard against traffic bypassing the tunnel if the daemon stops.
+- **Russian and English desktop interface.** Switch languages under **Settings → Language**. The app remembers your choice. The Masir and AmneziaWG versions are shown at the bottom of Settings, above **Quit Masir**.
+- **Hysteria 2 import compatibility.** Provider exports can include server-only masquerade settings. Masir removes those settings from imported client outbounds, including members of a balanced profile.
+- **Fork-specific updates.** The app and daemon use this fork's release feed. Desktop updates can install the matching signed service components bundled with the app.
 
 ## Why Masir
 
@@ -59,15 +72,13 @@ V2Ray/Xray routing is a powerful feature that can send each connection exactly w
 
 Masir started from the opposite end. Routing comes first: rules are easy to write and easy to read, and nothing about them is watered down, so anything Xray can match, Masir can route. The core stays up while you change things, because Xray's own API can apply changes live. Servers from several subscriptions sit side by side, and any rule can point at any of them. And the tool should feel good to use every day: fast to pick a server, clear about what's running, quiet when everything works.
 
-It's the client I wanted for myself, for living with Xray configs and moving between many servers. If you've felt the same friction, it's probably the client you wanted too.
-
 ## Install
 
 ### 1. GUI App (Recommended)
 
 The easiest way to use Masir is the desktop app. It lives in your menu bar / system tray, sets up the environment automatically, and installs the `masir` CLI tool into your `PATH` on first launch (`~/.local/bin/masir` on macOS/Linux, or user `PATH` on Windows).
 
-Download the desktop installer for your system from the **[latest release](https://github.com/Gozargah/Masir/releases/latest)**:
+Download the desktop installer for your system from the **[Masir Fork releases](https://github.com/nekl3103/masir-fork/releases)**.
 
 
 ---
@@ -76,7 +87,7 @@ Download the desktop installer for your system from the **[latest release](https
 
 If you are on a headless server or prefer using the command line only:
 
-1. Download the CLI archive for your system from the **[latest release](https://github.com/Gozargah/Masir/releases/latest)** (`masir-cli-<os>-<version>-<arch>.tar.gz` or `.zip`). Each archive contains the `masir` executable along with `geosite.dat` and `geoip.dat`.
+1. Download the CLI archive for your system from the **[Masir Fork releases](https://github.com/nekl3103/masir-fork/releases)** (`masir-cli-<os>-<version>-<arch>.tar.gz` or `.zip`). Each archive contains the `masir` executable along with `geosite.dat` and `geoip.dat`.
 
 2. Extract the archive and place `masir` on your `PATH`:
 
@@ -154,7 +165,7 @@ Run `masir` with no arguments for the full command list, or `masir menu` for an 
 
 ## Routing rules
 
-Rules are checked top to bottom; the first match wins. Traffic no rule matches goes to the **routing mode**: `proxy` (the default) or `direct`, switched with `masir mode`. With no server selected yet, Masir has to send it direct until you pick one. Local network traffic and DNS are handled by built-in rules, so you never lock yourself out.
+Rules are checked from top to bottom. The first match wins. Unmatched traffic follows the **routing mode**, either `proxy` (the default) or `direct`. Use `masir mode` to switch modes. In proxy mode with no server selected, unmatched internet traffic goes direct when Kill Switch is off and is blocked when it is on. Built-in rules handle local network traffic and DNS.
 
 Each rule sends its traffic to one of:
 
@@ -333,9 +344,10 @@ On Windows, TUN runs on the [Wintun](https://www.wintun.net) driver, built into 
 You need Go 1.27 or newer.
 
 ```sh
-git clone https://github.com/Gozargah/Masir.git
-cd Masir
+git clone https://github.com/nekl3103/masir-fork.git
+cd masir-fork
 make build                  # dist/masir
+make gui-local              # desktop app for this machine in apps/masir-gui/dist/
 ```
 
 For geo rules, put `geosite.dat` and `geoip.dat` next to the binary, or let `masir update geo` fetch them.

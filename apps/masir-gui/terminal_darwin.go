@@ -12,7 +12,7 @@ func openTerminalCommand(cmd string) error {
 	script := fmt.Sprintf(`tell application "Terminal" to do script %q
 tell application "Terminal" to activate`, cmd)
 	if err := exec.Command("osascript", "-e", script).Run(); err != nil {
-		return fmt.Errorf("osascript: %w", err)
+		return fmt.Errorf(tr("osascript: %w"), err)
 	}
 	return nil
 }

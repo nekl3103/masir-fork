@@ -120,13 +120,13 @@ func (a *app) filterRuleApps() {
 	slices.SortFunc(st.chosen, sortApps)
 	st.items = nil
 	if len(st.chosen) > 0 {
-		st.items = append(st.items, ruleAppItem{group: "Selected"})
+		st.items = append(st.items, ruleAppItem{group: tr("Selected")})
 		for _, v := range st.chosen {
 			st.items = append(st.items, ruleAppItem{app: v, selectedGroup: true})
 		}
 	}
 	if len(st.filtered) > 0 {
-		st.items = append(st.items, ruleAppItem{group: "Apps"})
+		st.items = append(st.items, ruleAppItem{group: tr("Apps")})
 		for _, v := range st.filtered {
 			st.items = append(st.items, ruleAppItem{app: v})
 		}
@@ -175,9 +175,9 @@ func (a *app) pickRuleApp(directory bool) {
 	}
 	st.picking = true
 	token := st.session
-	options := mygo.OpenDialogOptions{Title: "Choose application", Directory: directory, Multiple: true}
+	options := mygo.OpenDialogOptions{Title: tr("Choose application"), Directory: directory, Multiple: true}
 	if directory {
-		options.Title = "Choose folder"
+		options.Title = tr("Choose folder")
 	} else if runtime.GOOS == "darwin" {
 		options.DefaultPath = "/Applications"
 	}
@@ -209,29 +209,29 @@ func (a *app) ruleAppsEditor(c *ui.Context, p palette) {
 	a.syncRuleAppSelection()
 	ui.Column(c).Shrink(0).Children(func() {
 		ui.Row(c).Padding(6, 8).Shrink(0).Children(func() {
-			ui.Column(c).Grow(1).Basis(0).MinWidth(0).Children(func() { ruleSegments(c, "app-scope", &st.tab, p, "Apps", "Manual") })
+			ui.Column(c).Grow(1).Basis(0).MinWidth(0).Children(func() { ruleSegments(c, "app-scope", &st.tab, p, tr("Apps"), tr("Manual")) })
 		})
 		panelBar(c, p, func() {
 			if st.tab == ruleAppsManual {
-				label(c, "Executable names and paths", sizeCaption, 16, 500, p.muted).Grow(1)
+				label(c, tr("Executable names and paths"), sizeCaption, 16, 500, p.muted).Grow(1)
 			} else {
-				searchInput(c, "app-search", &st.query, "Search applications…", p)
+				searchInput(c, "app-search", &st.query, tr("Search applications…"), p)
 			}
 		}, func() {
 			ui.Row(c).Gap(2).Children(func() {
-				if iconButton(c, "pick-executable", iconApp, "Choose application", p, iconMD, variantSubtle, 12) && !st.picking {
+				if iconButton(c, "pick-executable", iconApp, tr("Choose application"), p, iconMD, variantSubtle, 12) && !st.picking {
 					a.pickRuleApp(false)
 				}
-				if iconButton(c, "pick-directory", iconFolder, "Choose folder", p, iconMD, variantSubtle, 12) && !st.picking {
+				if iconButton(c, "pick-directory", iconFolder, tr("Choose folder"), p, iconMD, variantSubtle, 12) && !st.picking {
 					a.pickRuleApp(true)
 				}
 			})
 		})
 		if st.tab == ruleAppsManual {
 			ui.Column(c).Padding(8).Gap(6).Children(func() {
-				label(c, "One executable name or full path per line. End a folder path with / to include its applications.", sizeMicro, 15, 400, p.muted)
+				label(c, tr("One executable name or full path per line. End a folder path with / to include its applications."), sizeMicro, 15, 400, p.muted)
 				value := a.rulePage.values["process"]
-				labeledInput(c, p, "process-paths", "Application paths", &value, "Any application", iconTerminal, p.muted, 116, nil).AutoFocus()
+				labeledInput(c, p, "process-paths", tr("Application paths"), &value, tr("Any application"), iconTerminal, p.muted, 116, nil).AutoFocus()
 				if value != a.rulePage.values["process"] {
 					a.rulePage.values["process"] = value
 					a.syncRuleAppSelection()
@@ -244,14 +244,14 @@ func (a *app) ruleAppsEditor(c *ui.Context, p palette) {
 			if st.loading {
 				ui.Row(c).Padding(10).Gap(6).AlignItems(ui.Center).Children(func() {
 					ui.Spinner(c).Size(12, 12)
-					label(c, "Finding installed applications…", sizeCaption, 16, 400, p.muted)
+					label(c, tr("Finding installed applications…"), sizeCaption, 16, 400, p.muted)
 				})
 			}
 			if !st.loading && len(st.filtered) == 0 && st.err == "" {
-				message := "No installed applications found. Choose an app or folder, or use Manual."
+				message := tr("No installed applications found. Choose an app or folder, or use Manual.")
 				switch {
 				case st.query != "":
-					message = "No matching applications."
+					message = tr("No matching applications.")
 				}
 				label(c, message, sizeCaption, 16, 400, p.muted).Padding(12, 10)
 			}
@@ -266,23 +266,23 @@ func (a *app) ruleAppsEditor(c *ui.Context, p palette) {
 			containListScroll(ui.List(c, &st.list, len(st.items), func(i int) {
 				item := st.items[i]
 				if item.group != "" {
-					ui.Row(c).Label("Application group "+item.group).Height(22).Padding(0, 6).AlignItems(ui.Center).Background(p.listHeader).Children(func() { label(c, strings.ToUpper(item.group), sizeMicro, 14, 600, p.muted).SingleLine() })
+					ui.Row(c).Label(tr("Application group ")+item.group).Height(22).Padding(0, 6).AlignItems(ui.Center).Background(p.listHeader).Children(func() { label(c, strings.ToUpper(item.group), sizeMicro, 14, 600, p.muted).SingleLine() })
 					return
 				}
 				a.ruleAppRow(c, p, item.app)
-			})).Label("Application choices").Height(min(208, height)).Shrink(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
+			})).Label(tr("Application choices")).Height(min(208, height)).Shrink(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
 		}
 		if st.err != "" {
 			label(c, st.err, sizeCaption, 16, 400, p.errorC).Padding(6, 10)
 		}
-		ui.Row(c).Label("Application selection status").Padding(6, 10).AlignItems(ui.Center).Justify(ui.SpaceBetween).Children(func() {
+		ui.Row(c).Label(tr("Application selection status")).Padding(6, 10).AlignItems(ui.Center).Justify(ui.SpaceBetween).Children(func() {
 			count := st.count
-			title := "Any application"
+			title := tr("Any application")
 			if count > 0 {
-				title = fmt.Sprintf("%d selected", count)
+				title = fmt.Sprintf(tr("%d selected"), count)
 			}
 			label(c, title, sizeMicro, 15, 400, p.muted)
-			if count > 0 && ui.Button(c.Key("clear-apps"), "Reset to Any").Label("Clear application selection").Disabled(a.rulePage.busy).Clicked() {
+			if count > 0 && ui.Button(c.Key("clear-apps"), tr("Reset to Any")).Label(tr("Clear application selection")).Disabled(a.rulePage.busy).Clicked() {
 				a.rulePage.values["process"] = ""
 				a.syncRuleAppSelection()
 			}
@@ -293,7 +293,7 @@ func (a *app) ruleAppsEditor(c *ui.Context, p palette) {
 func (a *app) ruleAppRow(c *ui.Context, p palette, v ruleApp) {
 	st := &a.ruleApps
 	selected := st.selected[v.Path]
-	row := ui.ToggleBase(c.Key(v.Path), &selected).Label("Select "+v.Name).Disabled(a.rulePage.busy).Padding(6).Gap(8).Radius(6).AlignItems(ui.Center).Border(1, ui.Transparent).Cursor(ui.CursorPointer)
+	row := ui.ToggleBase(c.Key(v.Path), &selected).Label(tr("Select ")+v.Name).Disabled(a.rulePage.busy).Padding(6).Gap(8).Radius(6).AlignItems(ui.Center).Border(1, ui.Transparent).Cursor(ui.CursorPointer)
 	if selected {
 		row.Background(p.accentSurface).Border(1, p.borderFocus)
 	} else if row.Hovered() {
@@ -304,14 +304,14 @@ func (a *app) ruleAppRow(c *ui.Context, p palette, v ruleApp) {
 		_, icon := a.apps.read(meta)
 		iconTile(c, p, func() {
 			if icon != nil {
-				ui.Image(c, icon).Size(tw(7), tw(7)).Radius(4).MarginY(-4).Label("Picker application icon")
+				ui.Image(c, icon).Size(tw(7), tw(7)).Radius(4).MarginY(-4).Label(tr("Picker application icon"))
 			} else {
 				ui.Icon(c, iconApp).FontSize(14).TextColor(p.muted)
 			}
 		})
 		label(c, v.Name, sizeBody, 16, 500, p.text).Grow(1).Basis(0).MinWidth(0).SingleLine()
 		if v.Running {
-			label(c, "Running", sizeMicro, 14, 400, p.healthy).Label("Application is running").Shrink(0)
+			label(c, tr("Running"), sizeMicro, 14, 400, p.healthy).Label(tr("Application is running")).Shrink(0)
 		}
 
 		if selected {
@@ -363,7 +363,7 @@ ConvertTo-Json -InputObject @($desktop+$packaged) -Compress`).Output()
 			e = json.Unmarshal(data, &out)
 		}
 		if e != nil {
-			err = fmt.Errorf("Couldn't list installed apps; choose an executable manually.")
+			err = fmt.Errorf("%s", tr("Couldn't list installed apps; choose an executable manually."))
 		}
 	} else {
 		for _, v := range installed {
@@ -382,7 +382,7 @@ ConvertTo-Json -InputObject @($desktop+$packaged) -Compress`).Output()
 	}
 	running, runErr := runningRuleApps(ctx)
 	if runErr != nil && err == nil {
-		err = fmt.Errorf("Couldn't list running apps; installed apps and manual picking are still available.")
+		err = fmt.Errorf("%s", tr("Couldn't list running apps; installed apps and manual picking are still available."))
 	}
 	return mergeInstalledRuleApps(out, running, runtime.GOOS), err
 }

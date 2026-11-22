@@ -35,7 +35,7 @@ func serverSearchText(name, sub string, cfg *pb.SubscriptionConfig) string {
 	flag, title, detail := serverTitle(name)
 	parts := []string{name, title, detail, sub, cfg.GetProtocol(), cfg.GetAddress()}
 	if code := emojiCode(flag); code != "" {
-		parts = append(parts, code)
+		parts = append(parts, code, countryNameIn(code, "en"), countryNameIn(code, "ru"))
 	}
 	return strings.ToLower(strings.Join(parts, " "))
 }
@@ -168,7 +168,7 @@ func (a *app) probeServers(parent context.Context, quiet bool, targets []server)
 					}
 				}
 				if !quiet && err != nil && !errors.Is(err, io.EOF) {
-					a.fail("Couldn't complete the latency test: ", err)
+					a.fail(tr("Couldn't complete the latency test: "), err)
 				}
 			})
 		})
@@ -205,7 +205,7 @@ func (a *app) removeSubscription(id string) {
 		a.post(func() {
 			a.refreshLists()
 			if err != nil {
-				a.fail("Couldn't remove the subscription: ", err)
+				a.fail(tr("Couldn't remove the subscription: "), err)
 				return
 			}
 			for a.path != mainPath && a.router.CanGoBack() {
@@ -217,9 +217,9 @@ func (a *app) removeSubscription(id string) {
 			if a.collapsedSubs != nil {
 				delete(a.collapsedSubs, id)
 			}
-			msg := "Subscription deleted"
+			msg := tr("Subscription deleted")
 			if subName != "" {
-				msg = fmt.Sprintf("Subscription %q deleted", subName)
+				msg = fmt.Sprintf(tr("Subscription %q deleted"), subName)
 			}
 			a.notify(msg)
 		})
@@ -250,7 +250,7 @@ func (a *app) refreshSubscription(id string) {
 				}
 			}
 			if err != nil {
-				a.fail("Couldn't refresh the subscription: ", err)
+				a.fail(tr("Couldn't refresh the subscription: "), err)
 			}
 		})
 	})
@@ -282,12 +282,12 @@ func (a *app) addSubscription() {
 				a.subError = describe(err)
 				return
 			}
-			msg := "Subscription added"
+			msg := tr("Subscription added")
 			var newSubID string
 			if res != nil && res.Subscription != nil {
 				newSubID = res.Subscription.Id
 				if res.Subscription.Name != "" {
-					msg = fmt.Sprintf("Subscription %q added", res.Subscription.Name)
+					msg = fmt.Sprintf(tr("Subscription %q added"), res.Subscription.Name)
 				}
 			}
 			a.notifySuccess(msg)

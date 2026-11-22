@@ -19,9 +19,10 @@ type profileTarget struct {
 }
 
 type profileGraph struct {
-	observers []profileObserver
-	scopes    map[string]obj
-	sniff     bool
+	killSwitch bool
+	observers  []profileObserver
+	scopes     map[string]obj
+	sniff      bool
 }
 
 type profileObserver struct {
@@ -125,6 +126,9 @@ func (g *profileGraph) add(p *subs.OutboundProfile, namespace string) (profileTa
 				}
 			}
 		}
+		if g.killSwitch {
+			o = blockProviderDirect(o)
+		}
 		o["tag"], _ = json.Marshal(tag)
 		encoded, err := json.Marshal(o)
 		if err != nil {
@@ -224,6 +228,17 @@ func (g *profileGraph) add(p *subs.OutboundProfile, namespace string) (profileTa
 	g.scopes[scopeTag] = obj{"rules": scopedRules, "balancers": scopeBalancers, "domainStrategy": policy.DomainStrategy,
 		"firstOutbound": firstOutbound, "loopbacks": loopbacks}
 	return profileTarget{tag: scopeTag, scoped: true}, outbounds, nil
+}
+
+// Provider routes and balancer fallbacks must stay inside the VPN policy.
+func blockProviderDirect(outbound map[string]json.RawMessage) map[string]json.RawMessage {
+	for key, raw := range outbound {
+		var protocol string
+		if strings.EqualFold(key, "protocol") && json.Unmarshal(raw, &protocol) == nil && strings.EqualFold(protocol, "freedom") {
+			return map[string]json.RawMessage{"protocol": json.RawMessage(`"blackhole"`)}
+		}
+	}
+	return outbound
 }
 
 func scopedSelectors(prefix string, refs []string) []string {

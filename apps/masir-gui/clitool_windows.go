@@ -79,7 +79,7 @@ func windowsOnPath(dir string) bool {
 // left where it is.
 func installCLI(bin string) (cliStatus, error) {
 	if bin == "" || !fileExists(bin) {
-		return cliStatus{}, errors.New("the app ships no masir executable to install")
+		return cliStatus{}, errors.New(tr("the app ships no masir executable to install"))
 	}
 	own := filepath.Join(filepath.Dir(bin), cliCommand())
 	if p, ok := findCLI(); ok && !samePath(p, own) {
@@ -93,7 +93,7 @@ func installCLI(bin string) (cliStatus, error) {
 
 func removeCLI(bin string) error {
 	if bin == "" {
-		return errors.New("the app ships no masir executable to remove")
+		return errors.New(tr("the app ships no masir executable to remove"))
 	}
 	return removeUserPath(filepath.Dir(bin))
 }

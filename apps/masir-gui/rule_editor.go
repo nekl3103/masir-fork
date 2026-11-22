@@ -56,7 +56,7 @@ func decodeRule(r *pb.RoutingRule) rulePageState {
 	st.original, st.name, st.target = r.RuleTag, r.RuleTag, r.Target
 	if err := json.Unmarshal([]byte(r.RuleJson), &st.extra); err != nil || st.extra == nil {
 		st.invalid = true
-		st.err = "This rule cannot be edited because its match data is invalid."
+		st.err = tr("This rule cannot be edited because its match data is invalid.")
 		return st
 	}
 	for _, d := range ruleConditions {
@@ -136,13 +136,13 @@ func validateRuleCondition(key, value string) error {
 		case "port", "sourcePort":
 			parts := strings.Split(v, "-")
 			if len(parts) > 2 {
-				return fmt.Errorf("Use a port or range, such as 443 or 1000-2000.")
+				return fmt.Errorf("%s", tr("Use a port or range, such as 443 or 1000-2000."))
 			}
 			prev := 0
 			for _, s := range parts {
 				n, err := strconv.Atoi(s)
 				if err != nil || n < 1 || n > 65535 || n < prev {
-					return fmt.Errorf("Ports must be between 1 and 65535, with ranges in ascending order.")
+					return fmt.Errorf("%s", tr("Ports must be between 1 and 65535, with ranges in ascending order."))
 				}
 				prev = n
 			}
@@ -152,26 +152,26 @@ func validateRuleCondition(key, value string) error {
 			}
 			if _, err := netip.ParseAddr(v); err != nil {
 				if _, err := netip.ParsePrefix(v); err != nil {
-					return fmt.Errorf("%q is not an IP address or CIDR range.", v)
+					return fmt.Errorf(tr("%q is not an IP address or CIDR range."), v)
 				}
 			}
 		case "network":
 			if v != "tcp" && v != "udp" {
-				return fmt.Errorf("Choose TCP, UDP or Any.")
+				return fmt.Errorf("%s", tr("Choose TCP, UDP or Any."))
 			}
 		case "protocol":
 			if v != "http" && v != "tls" && v != "quic" && v != "bittorrent" {
-				return fmt.Errorf("Choose http, tls, quic or bittorrent.")
+				return fmt.Errorf("%s", tr("Choose http, tls, quic or bittorrent."))
 			}
 		case "domain":
 			if strings.HasPrefix(v, "regexp:") {
 				if _, err := regexp.Compile(strings.TrimPrefix(v, "regexp:")); err != nil {
-					return fmt.Errorf("Invalid domain regular expression: %v", err)
+					return fmt.Errorf(tr("Invalid domain regular expression: %v"), err)
 				}
 				continue
 			}
 			if strings.ContainsAny(v, " \t/") || strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(v, "domain:"), "full:"), "geosite:")) == "" || strings.Contains(v, "://") {
-				return fmt.Errorf("Enter a domain or category, such as domain:example.com or geosite:cn.")
+				return fmt.Errorf("%s", tr("Enter a domain or category, such as domain:example.com or geosite:cn."))
 			}
 		}
 	}
@@ -179,7 +179,7 @@ func validateRuleCondition(key, value string) error {
 }
 func (st *rulePageState) matchJSON() (string, error) {
 	if st.invalid {
-		return "", fmt.Errorf("This rule has invalid match data and cannot be saved.")
+		return "", fmt.Errorf("%s", tr("This rule has invalid match data and cannot be saved."))
 	}
 	m := map[string]json.RawMessage{}
 	for k, v := range st.extra {
@@ -192,7 +192,7 @@ func (st *rulePageState) matchJSON() (string, error) {
 			continue
 		}
 		if err := validateRuleCondition(d.key, value); err != nil {
-			return "", fmt.Errorf("%s: %w", d.title, err)
+			return "", fmt.Errorf("%s: %w", tr(d.title), err)
 		}
 		entries := ruleEntries(d.key, value)
 		if len(entries) == 0 {
@@ -205,7 +205,7 @@ func (st *rulePageState) matchJSON() (string, error) {
 		m[d.key], _ = json.Marshal(v)
 	}
 	if len(m) == 0 {
-		return "", fmt.Errorf("Add at least one matching condition.")
+		return "", fmt.Errorf("%s", tr("Add at least one matching condition."))
 	}
 	b, err := json.Marshal(m)
 	return string(b), err
@@ -223,11 +223,11 @@ func (a *app) saveRule() {
 	}
 	name := strings.TrimSpace(st.name)
 	if name == "" {
-		st.err = "Give this rule a name."
+		st.err = tr("Give this rule a name.")
 		return
 	}
 	if r := a.ruleByTag(name); r != nil && name != st.original {
-		st.err = "A rule with this name already exists."
+		st.err = tr("A rule with this name already exists.")
 		return
 	}
 	for _, d := range ruleConditions {
@@ -327,7 +327,7 @@ func (a *app) deleteSelectedRule() {
 func conditionSummary(key, value string) string {
 	entries := ruleEntries(key, value)
 	if len(entries) == 0 {
-		return "Any"
+		return tr("Any")
 	}
 	first := entries[0]
 	if key == "domain" {
@@ -354,13 +354,13 @@ func (a *app) ruleConditionsCard(c *ui.Context, p palette, editing bool, st *rul
 				if i > 0 {
 					cardDivider(c, p)
 				}
-				subscriptionInfoRow(c, p, d.icon, d.title, conditionSummary(d.key, st.values[d.key]))
+				subscriptionInfoRow(c, p, d.icon, tr(d.title), conditionSummary(d.key, st.values[d.key]))
 			}
 		})
 		return
 	}
 	acc := ui.AccordionBase(c)
-	acc.Root.Label("Rule conditions").Radius(cardRadius).Background(p.card).Border(1, p.borderDefault).Clip().Shrink(0).Children(func() {
+	acc.Root.Label(tr("Rule conditions")).Radius(cardRadius).Background(p.card).Border(1, p.borderDefault).Clip().Shrink(0).Children(func() {
 		for i, d := range ruleConditions {
 			if i >= 5 && !st.more && st.values[d.key] == "" {
 				continue
@@ -371,28 +371,28 @@ func (a *app) ruleConditionsCard(c *ui.Context, p palette, editing bool, st *rul
 			ui.Column(c.Key(d.key)).Shrink(0).Children(func() {
 				open := st.expanded == d.key
 				item := acc.Item(&open)
-				row := item.Trigger.Label(d.title).Disabled(st.busy).Height(40).Padding(0, 10).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+				row := item.Trigger.Label(tr(d.title)).Disabled(st.busy).Height(40).Padding(0, 10).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer)
 				if row.Hovered() {
 					row.Background(p.cardHover)
 				}
 				row.Children(func() {
 					ui.Icon(c, d.icon).FontSize(14).TextColor(p.muted).Shrink(0)
-					title := d.title
+					title := tr(d.title)
 					switch d.key {
 					case "domain":
-						title = "Websites"
+						title = tr("Websites")
 					case "ip":
-						title = "IP ranges"
+						title = tr("IP ranges")
 					case "port":
-						title = "Ports"
+						title = tr("Ports")
 					case "network":
-						title = "Network"
+						title = tr("Network")
 					case "protocol":
-						title = "Protocols"
+						title = tr("Protocols")
 					case "source":
-						title = "Source IPs"
+						title = tr("Source IPs")
 					case "sourcePort":
-						title = "Source ports"
+						title = tr("Source ports")
 					}
 					label(c, title, sizeSubhead, 16, 500, p.text).Shrink(0)
 					ui.Row(c).Grow(1).Basis(0).MinWidth(0).Gap(4).AlignItems(ui.Center).Justify(ui.End).Clip().Children(func() { a.ruleSelectionSummary(c, p, d.key, st.values[d.key]) })
@@ -404,7 +404,7 @@ func (a *app) ruleConditionsCard(c *ui.Context, p palette, editing bool, st *rul
 				}
 				item.Panel(func() {
 					panelTheme := ruleFormTheme(c, p, true)
-					ui.Themed(c, &panelTheme).Label(d.title + " options").Gap(8).Shrink(0).Children(func() {
+					ui.Themed(c, &panelTheme).Label(tr(d.title) + tr(" options")).Gap(8).Shrink(0).Children(func() {
 						if d.key == "process" || d.key == "domain" || d.key == "ip" {
 							a.ruleConditionEditor(c, p, d)
 						} else {
@@ -436,21 +436,21 @@ func (a *app) toggleRuleAccordion(key string) {
 
 func (a *app) ruleEditView(c *ui.Context, p palette) {
 	st := &a.rulePage
-	title := "New Rule"
+	title := tr("New Rule")
 	if st.original != "" {
-		title = "Edit Rule"
+		title = tr("Edit Rule")
 	}
 	formTheme := ruleFormTheme(c, p, false)
 	ui.Themed(c, &formTheme).Background(ui.Transparent).Fill().Children(func() {
 		ui.Column(c).Bind(&st.editHeader).Padding(pageInset, pageInset, 0).Shrink(0).Children(func() {
 			a.pageHeader(c, p, title)
 		})
-		formScroll := ui.Scroll(c).Label("Rule form").TrackScroll(&st.formScroll).Grow(1).Basis(0).MinHeight(0).Padding(0, pageInset, 8).Children(func() {
+		formScroll := ui.Scroll(c).Label(tr("Rule form")).TrackScroll(&st.formScroll).Grow(1).Basis(0).MinHeight(0).Padding(0, pageInset, 8).Children(func() {
 			ui.Column(c).Bind(&st.editContent).Gap(10).Shrink(0).Children(func() {
-				titled(c, p, "MATCH WHEN", nil, func() { a.ruleConditionsCard(c, p, true, st) })
-				moreTitle := "+ more conditions"
+				titled(c, p, tr("MATCH WHEN"), nil, func() { a.ruleConditionsCard(c, p, true, st) })
+				moreTitle := tr("+ more conditions")
 				if st.more {
-					moreTitle = "- less conditions"
+					moreTitle = tr("- less conditions")
 				}
 				more := ui.ButtonBase(c.Key("more-conditions")).Label(moreTitle).AlignSelf(ui.Start).Padding(3, 0).Cursor(ui.CursorPointer).Disabled(st.busy)
 				more.Children(func() { label(c, moreTitle, sizeCaption, 16, 400, p.muted) })
@@ -460,9 +460,9 @@ func (a *app) ruleEditView(c *ui.Context, p palette) {
 						st.expanded = ""
 					}
 				}
-				label(c, "All specified conditions must match. Entries within a condition match any.", sizeMicro, 15, 400, p.muted).Label("Rule matching explanation")
+				label(c, tr("All specified conditions must match. Entries within a condition match any."), sizeMicro, 15, 400, p.muted).Label(tr("Rule matching explanation"))
 				if len(st.extra) > 0 {
-					label(c, "Additional advanced conditions are preserved.", sizeMicro, 14, 400, p.muted)
+					label(c, tr("Additional advanced conditions are preserved."), sizeMicro, 14, 400, p.muted)
 				}
 				a.ruleDestinationAccordion(c, p)
 
@@ -478,14 +478,14 @@ func (a *app) ruleEditView(c *ui.Context, p palette) {
 		}
 
 		ui.Column(c).Bind(&st.editFooter).Padding(8, pageInset, pageInset).Gap(8).Shrink(0).Children(func() {
-			field(c, p, "rule-name", "Rule name", &st.name, "e.g. Work apps", iconTag, p.muted, nil)
+			field(c, p, "rule-name", tr("Rule name"), &st.name, tr("e.g. Work apps"), iconTag, p.muted, nil)
 			if st.err != "" {
 				label(c, st.err, sizeCaption, 15, 400, p.errorC).MaxLines(3)
 			}
 			ui.Row(c).Gap(8).Children(func() {
 				ui.Row(c).Grow(1).Basis(0).Gap(8).Children(func() {
 					if st.removing {
-						remove := ui.Button(c.Key("confirm-editor-remove"), "Remove").Label("Confirm remove rule").Height(28).Grow(1).Basis(0).
+						remove := ui.Button(c.Key("confirm-editor-remove"), tr("Remove")).Label(tr("Confirm remove rule")).Height(28).Grow(1).Basis(0).
 							Disabled(st.busy).Background(p.errorSurface).Border(1, p.errorBorder).TextColor(p.errorC)
 						if remove.Clicked() {
 							st.removing = false
@@ -494,19 +494,19 @@ func (a *app) ruleEditView(c *ui.Context, p palette) {
 						return
 					}
 					if st.original != "" {
-						trash := ui.Button(c.Key("delete-rule"), "").Label("Delete rule").Tooltip("Delete rule").
+						trash := ui.Button(c.Key("delete-rule"), "").Label(tr("Delete rule")).Tooltip(tr("Delete rule")).
 							Size(28, 28).Padding(0).Shrink(0).Disabled(st.busy)
 						trash.Children(func() { ui.Icon(c, iconTrash).FontSize(15).TextColor(p.muted) })
 						if trash.Clicked() {
 							st.removing = true
 						}
 					}
-					if ui.Button(c.Key("cancel-rule"), "Cancel").Label("Cancel rule editing").Height(28).Grow(1).Basis(0).Disabled(st.busy).Clicked() {
+					if ui.Button(c.Key("cancel-rule"), tr("Cancel")).Label(tr("Cancel rule editing")).Height(28).Grow(1).Basis(0).Disabled(st.busy).Clicked() {
 						a.goBack()
 					}
 				})
 				ui.Column(c).Grow(1).Basis(0).Children(func() {
-					if ui.PrimaryButton(c.Key("save-rule"), "Save rule").Label("Save rule changes").Height(28).Disabled(st.busy).Clicked() {
+					if ui.PrimaryButton(c.Key("save-rule"), tr("Save rule")).Label(tr("Save rule changes")).Height(28).Disabled(st.busy).Clicked() {
 						a.saveRule()
 					}
 				})
@@ -535,14 +535,14 @@ func (a *app) ruleDetailsView(c *ui.Context, p palette) {
 	r := a.ruleByTag(st.original)
 	ui.Column(c).Fill().Children(func() {
 		ui.Column(c).Padding(pageInset, pageInset, 0).Shrink(0).Children(func() {
-			a.pageHeader(c, p, "Rule", func() {
-				if r != nil && iconButton(c, "edit-rule", iconPencil, "Edit rule", p, iconSM, variantGhost, 15) && !st.busy {
+			a.pageHeader(c, p, tr("Rule"), func() {
+				if r != nil && iconButton(c, "edit-rule", iconPencil, tr("Edit rule"), p, iconSM, variantGhost, 15) && !st.busy {
 					a.editRule(r)
 				}
 			})
 		})
 		if r == nil {
-			label(c, "This rule is no longer available.", sizeBody, 18, 400, p.muted).Padding(pageInset)
+			label(c, tr("This rule is no longer available."), sizeBody, 18, 400, p.muted).Padding(pageInset)
 			return
 		}
 		ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).Padding(0, pageInset, 8).Children(func() {
@@ -556,15 +556,15 @@ func (a *app) ruleDetailsView(c *ui.Context, p palette) {
 							enabled = on
 						}
 					}
-					if next, changed := nativeSwitch(c, "rule-enabled", "Enable rule", enabled, switchSubdued, false, st.busy, p); changed {
+					if next, changed := nativeSwitch(c, "rule-enabled", tr("Enable rule"), enabled, switchSubdued, false, st.busy, p); changed {
 						a.setRuleEnabled(r.RuleTag, next)
 					}
 				})
 				if r.DisabledReason != "" {
 					label(c, r.DisabledReason, sizeCaption, 15, 400, p.errorC)
 				}
-				titled(c, p, "MATCH WHEN", nil, func() { a.ruleConditionsCard(c, p, false, &a.ruleReview) })
-				label(c, "All specified conditions must match.", sizeMicro, 15, 400, p.muted)
+				titled(c, p, tr("MATCH WHEN"), nil, func() { a.ruleConditionsCard(c, p, false, &a.ruleReview) })
+				label(c, tr("All specified conditions must match."), sizeMicro, 15, 400, p.muted)
 				if len(a.ruleReview.extra) > 0 {
 					data, _ := json.MarshalIndent(a.ruleReview.extra, "", "  ")
 					label(c, string(data), sizeCaption, 16, 400, p.muted).Selectable()
@@ -576,15 +576,15 @@ func (a *app) ruleDetailsView(c *ui.Context, p palette) {
 				label(c, st.err, sizeCaption, 15, 400, p.errorC)
 			}
 			if !st.removing {
-				if button(c, "remove-rule", "Remove rule", false, st.busy, false, p) {
+				if button(c, "remove-rule", tr("Remove rule"), false, st.busy, false, p) {
 					st.removing = true
 				}
 			} else {
-				label(c, "Remove this rule?", sizeCaption, 15, 500, p.errorC)
-				if button(c, "confirm-remove-rule", "Remove", true, st.busy, st.busy, p) {
+				label(c, tr("Remove this rule?"), sizeCaption, 15, 500, p.errorC)
+				if button(c, "confirm-remove-rule", tr("Remove"), true, st.busy, st.busy, p) {
 					a.deleteSelectedRule()
 				}
-				if thinButton(c, "keep-rule", "Keep rule", false, st.busy, false, p) {
+				if thinButton(c, "keep-rule", tr("Keep rule"), false, st.busy, false, p) {
 					st.removing = false
 				}
 			}
@@ -595,7 +595,7 @@ func (a *app) ruleDetailsView(c *ui.Context, p palette) {
 func (a *app) ruleSelectionSummary(c *ui.Context, p palette, key, value string) {
 	entries := ruleEntries(key, value)
 	if len(entries) == 0 {
-		label(c, "Any", sizeCaption, 16, 400, p.muted).SingleLine()
+		label(c, tr("Any"), sizeCaption, 16, 400, p.muted).SingleLine()
 		return
 	}
 	if key == "process" {
@@ -612,9 +612,9 @@ func (a *app) ruleSelectionSummary(c *ui.Context, p palette, key, value string) 
 			icons = append(icons, bitmap)
 		}
 		if len(icons) > 0 {
-			ui.Box(c).Label("Selected application icons").Size(24+float32(len(icons)-1)*14, 24).Shrink(0).Children(func() {
+			ui.Box(c).Label(tr("Selected application icons")).Size(24+float32(len(icons)-1)*14, 24).Shrink(0).Children(func() {
 				for i, bitmap := range icons {
-					ui.Box(c.Key(i)).Label(fmt.Sprintf("Selected application %d", i+1)).Absolute().Left(float32(i)*14).Top(0).Size(24, 24).Radius(6).Background(p.card).Border(1, p.borderDefault).Clip().Center().Children(func() { ui.Image(c, bitmap).Size(24, 24).MarginY(-3) })
+					ui.Box(c.Key(i)).Label(fmt.Sprintf(tr("Selected application %d"), i+1)).Absolute().Left(float32(i)*14).Top(0).Size(24, 24).Radius(6).Background(p.card).Border(1, p.borderDefault).Clip().Center().Children(func() { ui.Image(c, bitmap).Size(24, 24).MarginY(-3) })
 				}
 			})
 			if extra := len(entries) - len(icons); extra > 0 {

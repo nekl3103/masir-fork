@@ -201,7 +201,7 @@ func (a *app) installCommandLine() {
 	}
 	bin := a.cliBinary()
 	if bin == "" {
-		a.notifyError("This app ships no masir executable to install")
+		a.notifyError(tr("This app ships no masir executable to install"))
 		return
 	}
 	a.cliBusy = true
@@ -210,7 +210,7 @@ func (a *app) installCommandLine() {
 		a.post(func() {
 			a.cliBusy = false
 			if err != nil {
-				a.fail("Couldn't install the command line tool: ", err)
+				a.fail(tr("Couldn't install the command line tool: "), err)
 				return
 			}
 			a.cli, a.cliChecked = st, true
@@ -219,15 +219,15 @@ func (a *app) installCommandLine() {
 			}
 			switch {
 			case st.installed && !st.ours:
-				a.notify("masir is already installed at " + st.path)
+				a.notify(tr("masir is already installed at ") + st.path)
 			case st.needsShell:
-				a.notifySuccess("masir is installed; open a new terminal to use it")
+				a.notifySuccess(tr("masir is installed; open a new terminal to use it"))
 			case st.installed && st.onPath:
-				a.notifySuccess("masir is installed and on your PATH")
+				a.notifySuccess(tr("masir is installed and on your PATH"))
 			case st.installed:
-				a.notifySuccess("masir is installed in " + st.dir + "; add it to your PATH to use it")
+				a.notifySuccess(tr("masir is installed in ") + st.dir + tr("; add it to your PATH to use it"))
 			default:
-				a.notifyWarning("masir was not installed; see the log for why")
+				a.notifyWarning(tr("masir was not installed; see the log for why"))
 			}
 		})
 	})
@@ -238,7 +238,7 @@ func (a *app) installDaemonService() {
 		return
 	}
 	if a.binary == "" {
-		a.notifyError("This app ships no masir executable to install the service from")
+		a.notifyError(tr("This app ships no masir executable to install the service from"))
 		return
 	}
 	a.serviceBusy = true
@@ -248,13 +248,13 @@ func (a *app) installDaemonService() {
 		a.post(func() {
 			a.serviceBusy = false
 			if err != nil {
-				a.fail("Couldn't install the background service: ", err)
+				a.fail(tr("Couldn't install the background service: "), err)
 				return
 			}
 			a.binary = daemonBinary() // the service's copy is the one to start from now
 			a.serviceChecked = time.Time{}
 			a.refreshServiceState()
-			a.notifySuccess("The background service is installed")
+			a.notifySuccess(tr("The background service is installed"))
 		})
 	})
 }
@@ -265,7 +265,7 @@ func (a *app) startDaemonService() {
 	}
 	bin := a.binary
 	if bin == "" {
-		a.notifyError("This app ships no masir executable to start the service with")
+		a.notifyError(tr("This app ships no masir executable to start the service with"))
 		return
 	}
 	a.serviceBusy = true
@@ -274,12 +274,12 @@ func (a *app) startDaemonService() {
 		a.post(func() {
 			a.serviceBusy = false
 			if err != nil {
-				a.fail("Couldn't start the background service: ", err)
+				a.fail(tr("Couldn't start the background service: "), err)
 				return
 			}
 			a.serviceChecked = time.Time{}
 			a.refreshServiceState()
-			a.notifySuccess("The background service is starting")
+			a.notifySuccess(tr("The background service is starting"))
 		})
 	})
 }
@@ -289,7 +289,7 @@ func (a *app) removeDaemonService() {
 		return
 	}
 	if a.binary == "" {
-		a.notifyError("This app ships no masir executable to remove the service with")
+		a.notifyError(tr("This app ships no masir executable to remove the service with"))
 		return
 	}
 	a.serviceBusy = true
@@ -306,14 +306,14 @@ func (a *app) removeDaemonService() {
 		a.post(func() {
 			a.serviceBusy = false
 			if err != nil {
-				a.fail("Couldn't remove the background service: ", err)
+				a.fail(tr("Couldn't remove the background service: "), err)
 				return
 			}
 			// The service's directory is gone; the bundle's masir is the daemon now.
 			a.binary = daemonBinary()
 			a.serviceChecked = time.Time{}
 			a.refreshServiceState()
-			a.notifySuccess("The background service is removed")
+			a.notifySuccess(tr("The background service is removed"))
 			a.noteHandover()
 		})
 	})
@@ -337,5 +337,5 @@ func (a *app) noteHandover() {
 	if !a.status.GetSettings().GetTun() {
 		return // proxy only: nothing about the connection changes
 	}
-	a.notifyWarning("Tunnel mode needs the background service. Masir reconnects through the proxy until you install it again.")
+	a.notifyWarning(tr("Tunnel mode needs the background service. Masir reconnects through the proxy until you install it again."))
 }

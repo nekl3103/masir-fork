@@ -52,7 +52,7 @@ func (a *app) view(c *ui.Context) {
 
 		a.router.View(c, func(r *ui.Route) {
 			if pg, ok := pageAt(pagePath(r.Path())); ok {
-				r.Title(pg.title)
+				r.Title(tr(pg.title))
 				pg.build(a, c, p)
 			}
 		})

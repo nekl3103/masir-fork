@@ -59,7 +59,7 @@ func defaultPackageCacheDir() (string, error) {
 		return "", err
 	}
 	if dir == "" {
-		return "", errors.New("no cache directory")
+		return "", errors.New(tr("no cache directory"))
 	}
 	return filepath.Join(dir, "updates"), nil
 }
@@ -306,7 +306,7 @@ func (a *app) packageFailed(err error, files packageFiles, format string) {
 	}
 	st.phase = updateFailed
 	st.err = text
-	a.notifyError("The update failed: " + text)
+	a.notifyError(tr("The update failed: ") + text)
 }
 
 // packageFailure is the text for a failed package update, "" for a dismissed dialog,
@@ -320,19 +320,19 @@ func packageFailure(err error) (text string, deleteDownload bool) {
 	case elevationCancelled:
 		return "", false
 	case elevationDenied:
-		return "Your account isn't allowed to install software.", false
+		return tr("Your account isn't allowed to install software."), false
 	case elevationUnavailable:
-		return "Masir can't ask for administrator permission here. Download the new version from the release page and verify its signed checksum before installing.", false
+		return tr("Masir can't ask for administrator permission here. Download the new version from the release page and verify its signed checksum before installing."), false
 	}
 	switch code {
 	case pkgExitBusy:
-		return "Another installer is running. Try again in a minute.", false
+		return tr("Another installer is running. Try again in a minute."), false
 	case pkgExitMismatch:
-		return "The download didn't match the signed release; nothing was installed.", true
+		return tr("The download didn't match the signed release; nothing was installed."), true
 	case pkgExitUnreachable:
-		return "GitHub isn't reachable. Connect Masir and try again.", false
+		return tr("GitHub isn't reachable. Connect Masir and try again."), false
 	case pkgExitNotNewer:
-		return "This version is already installed. Restart Masir.", false
+		return tr("This version is already installed. Restart Masir."), false
 	}
 	msg := strings.TrimPrefix(err.Error(), "root permission wasn't granted: ")
 	lines := strings.Split(strings.TrimSpace(msg), "\n")

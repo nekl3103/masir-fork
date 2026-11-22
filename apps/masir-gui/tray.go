@@ -14,6 +14,14 @@ import (
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
 )
 
+func (s *shell) trayMenu() *mygo.Menu {
+	return mygo.NewMenu([]*mygo.MenuItem{
+		{Label: tr("Open Masir"), Click: func(*mygo.MenuItem, *mygo.Window) { s.show() }},
+		mygo.Separator(),
+		{Label: tr("Quit Masir"), Role: mygo.RoleQuit},
+	})
+}
+
 // updateTray shows the state in the menu bar: the logo is green while masir is on.
 func (a *app) updateTray(t *mygo.Tray) {
 	if t == nil {
@@ -31,19 +39,19 @@ func (a *app) updateTray(t *mygo.Tray) {
 }
 
 func (a *app) tooltip() string {
-	mode := "Tunnel"
+	mode := tr("Tunnel")
 	if a.fallback() == pb.Fallback_FALLBACK_DIRECT {
-		mode = "Direct"
+		mode = tr("Direct")
 	}
 	if a.connected() {
-		s := fmt.Sprintf("Masir: Connected · %s", mode)
+		s := fmt.Sprintf(tr("Masir: Connected · %s"), mode)
 		if srv, ok := a.active(); ok {
 			_, name, _ := serverTitle(srv.cfg.GetName())
 			s += " (" + name + ")"
 		}
 		return s
 	}
-	return "Masir: Disconnected · " + mode
+	return tr("Masir: Disconnected · ") + mode
 }
 
 // trayGreen is the logo while masir is on, the same green as the status dot.

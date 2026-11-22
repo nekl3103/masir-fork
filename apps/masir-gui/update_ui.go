@@ -93,11 +93,11 @@ func (a *app) updateControl(c *ui.Context, p palette, fill bool) {
 	ui.Box(c).Width(xSlot).Height(h).Center().Shrink(0).Children(func() {
 		switch a.updates.state.phase {
 		case updateAvailable, updateFailed:
-			if iconButton(c, "update-ignore", iconX, "Ignore this update", p, iconXS, variantGhost, 11) {
+			if iconButton(c, "update-ignore", iconX, tr("Ignore this update"), p, iconXS, variantGhost, 11) {
 				a.ignoreUpdate()
 			}
 		case updatePaused, updateAppPaused, updateReady:
-			if iconButton(c, "update-stop", iconStop, "Cancel the update", p, iconXS, variantGhost, 10) {
+			if iconButton(c, "update-stop", iconStop, tr("Cancel the update"), p, iconXS, variantGhost, 10) {
 				a.cancelUpdate()
 			}
 		}
@@ -131,7 +131,7 @@ func (a *app) updateLook(p palette) (text string, icon *ui.SVG, bg, fg ui.Color)
 		bg, fg = p.errorSurface, p.errorC
 	}
 	if text == "" {
-		text = fmt.Sprintf("Update %d%%", a.updatePercent())
+		text = fmt.Sprintf(tr("Update %d%%"), a.updatePercent())
 	}
 	return
 }

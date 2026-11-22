@@ -25,14 +25,14 @@ type deeplinkImport struct {
 func parseDeeplink(raw string) (*deeplinkImport, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return nil, errors.New("empty deeplink")
+		return nil, errors.New(tr("empty deeplink"))
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("invalid deeplink URL: %w", err)
+		return nil, fmt.Errorf(tr("invalid deeplink URL: %w"), err)
 	}
 	if !strings.EqualFold(u.Scheme, "masir") {
-		return nil, fmt.Errorf("unsupported URL scheme: %q", u.Scheme)
+		return nil, fmt.Errorf(tr("unsupported URL scheme: %q"), u.Scheme)
 	}
 
 	action := strings.Trim(u.Host, "/")
@@ -43,13 +43,13 @@ func parseDeeplink(raw string) (*deeplinkImport, error) {
 		action, _, _ = strings.Cut(u.Opaque, "?")
 	}
 	if !strings.EqualFold(action, "import") {
-		return nil, fmt.Errorf("unknown deeplink action: %q", action)
+		return nil, fmt.Errorf(tr("unknown deeplink action: %q"), action)
 	}
 
 	q := u.Query()
 	subURL := strings.TrimSpace(q.Get("url"))
 	if subURL == "" {
-		return nil, errors.New("missing subscription url in deeplink")
+		return nil, errors.New(tr("missing subscription url in deeplink"))
 	}
 	name := strings.TrimSpace(q.Get("name"))
 
@@ -57,7 +57,7 @@ func parseDeeplink(raw string) (*deeplinkImport, error) {
 	if refStr := strings.TrimSpace(q.Get("refresh")); refStr != "" {
 		n, err := strconv.Atoi(refStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid refresh parameter: %w", err)
+			return nil, fmt.Errorf(tr("invalid refresh parameter: %w"), err)
 		}
 		if n < 15 {
 			n = 15

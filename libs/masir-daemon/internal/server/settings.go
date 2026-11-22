@@ -24,6 +24,9 @@ func (s *Server) UpdateSettings(ctx context.Context, req *pb.UpdateSettingsReque
 	wasIdle := req.AlwaysOnProxy != nil && *req.AlwaysOnProxy && s.idle.Swap(false)
 	err := s.change(ctx, "settings updated", func(st *store.State) error {
 		set := &st.Settings
+		if req.KillSwitch != nil {
+			set.KillSwitch = *req.KillSwitch
+		}
 		if req.AlwaysOnProxy != nil {
 			set.AlwaysOnProxy = *req.AlwaysOnProxy
 		}
@@ -176,6 +179,7 @@ func toPBSettings(s store.Settings) *pb.Settings {
 		Power:         s.Power,
 		Tun:           s.Tun,
 		AlwaysOnProxy: s.AlwaysOnProxy,
+		KillSwitch:    &s.KillSwitch,
 		Fallback:      f,
 		AllowLan:      s.AllowLAN,
 		ProxyPort:     uint32(s.ProxyPort),

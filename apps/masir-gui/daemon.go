@@ -20,13 +20,13 @@ func (a *app) setPower(on bool) {
 	}
 	a.connection.checked = false
 	a.connection.generation++
-	a.busy = map[bool]string{true: "Connecting…", false: "Disconnecting…"}[on]
+	a.busy = map[bool]string{true: tr("Connecting…"), false: tr("Disconnecting…")}[on]
 	a.async(func() {
 		err := a.power(on)
 		a.post(func() {
 			a.busy = ""
 			if err != nil {
-				a.fail("Couldn't "+map[bool]string{true: "connect", false: "disconnect"}[on]+": ", err)
+				a.fail(tr(map[bool]string{true: "Couldn't connect: ", false: "Couldn't disconnect: "}[on]), err)
 			}
 		})
 	})
@@ -113,7 +113,7 @@ func (a *app) startDaemon() error {
 				return err
 			}
 		}
-		return a.waitForRoot("the background service didn't start with root permission")
+		return a.waitForRoot(tr("the background service didn't start with root permission"))
 	}
 	return a.becomePrivileged()
 }
@@ -137,7 +137,7 @@ func (a *app) becomePrivileged() error {
 	if err := startRootDaemon(a.daemonPath()); err != nil {
 		return err
 	}
-	return a.waitForRoot("the daemon didn't start with root permission")
+	return a.waitForRoot(tr("the daemon didn't start with root permission"))
 }
 
 // waitForRoot waits until the daemon answers and reports that it runs as root.
@@ -208,7 +208,7 @@ func (a *app) watch(ctx context.Context) {
 			}
 			bin := a.daemonPath()
 			if bin == "" {
-				warn("Couldn't start the masir daemon: the app ships no masir executable")
+				warn(tr("Couldn't start the masir daemon: the app ships no masir executable"))
 				sleep(ctx, 5*time.Second)
 				continue
 			}
@@ -218,7 +218,7 @@ func (a *app) watch(ctx context.Context) {
 				if dir, e := paths.ConfigDir(); e == nil {
 					coreanalytics.StartupFailure(dir, version, "gui", "daemon_start", err)
 				}
-				warn("Couldn't start the masir daemon: " + err.Error())
+				warn(tr("Couldn't start the masir daemon: ") + err.Error())
 				// Start fails as soon as the daemon does, so back off rather than spawn
 				// a broken daemon every three seconds.
 				failed++

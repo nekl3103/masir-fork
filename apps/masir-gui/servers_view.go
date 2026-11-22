@@ -20,10 +20,10 @@ func (a *app) serverPicker(c *ui.Context, p palette) {
 	servers := a.serversMatching(query)
 	groups := orderedGroups(servers)
 
-	panelBar(c, p, func() { searchInput(c, "server-search", &a.query, "Search servers…", p) }, func() {
+	panelBar(c, p, func() { searchInput(c, "server-search", &a.query, tr("Search servers…"), p) }, func() {
 		ui.Row(c).Gap(tw(1)).AlignItems(ui.Center).Children(func() {
 			busy := len(a.testing) > 0
-			if iconButton(c, "test-all", iconZap, map[bool]string{true: "Testing latency...", false: "Test Latency (All nodes)"}[busy], p, iconMD, variantSubtle, 12) && !busy {
+			if iconButton(c, "test-all", iconZap, map[bool]string{true: tr("Testing latency..."), false: tr("Test Latency (All nodes)")}[busy], p, iconMD, variantSubtle, 12) && !busy {
 				a.testServers()
 			}
 		})
@@ -34,8 +34,8 @@ func (a *app) serverPicker(c *ui.Context, p palette) {
 	}
 	if len(servers) == 0 {
 		ui.Column(c.Key("server-empty")).Height(height).AlignItems(ui.Center).Justify(ui.Center).Gap(tw(1)).Children(func() {
-			label(c, "No matching servers", sizeSubhead, 18, 500, p.muted)
-			label(c, "Try a different search term", sizeMicro, 14, 400, p.tertiary)
+			label(c, tr("No matching servers"), sizeSubhead, 18, 500, p.muted)
+			label(c, tr("Try a different search term"), sizeMicro, 14, 400, p.tertiary)
 		})
 		return
 	}
@@ -87,10 +87,10 @@ func (a *app) serverPicker(c *ui.Context, p palette) {
 				openDetails = func() { a.openSubscription(g.id) }
 			}
 			ui.Column(c).Background(p.listHeader).Children(func() {
-				a.groupHeader(c, p, g.id, g.name, len(g.servers), folds.collapsed(a, g.id), "Server group "+g.name, func() { folds.toggle(a, g.id) }, openDetails)
+				a.groupHeader(c, p, g.id, g.name, len(g.servers), folds.collapsed(a, g.id), tr("Server group ")+g.name, func() { folds.toggle(a, g.id) }, openDetails)
 				for _, sub := range a.subscriptions.subscriptions {
 					if sub.Id == g.id && sub.LastError != "" {
-						label(c, "Refresh failed: "+sub.LastError, sizeCaption, 15, 400, p.errorC).Padding(0, tw(2), tw(1)).MaxLines(2)
+						label(c, tr("Refresh failed: ")+sub.LastError, sizeCaption, 15, 400, p.errorC).Padding(0, tw(2), tw(1)).MaxLines(2)
 					}
 				}
 			})
@@ -175,7 +175,7 @@ func orderedGroups(servers []server) []serverGroup {
 	for _, s := range servers {
 		name := s.subName
 		if name == "" {
-			name = "Custom Outbounds"
+			name = tr("Custom Outbounds")
 		}
 		subID := s.key.sub
 		if subID == "" {
@@ -230,9 +230,9 @@ func (a *app) groupHeader(c *ui.Context, p palette, id, title string, countServe
 			drawTitle := func() {
 				label(c, strings.ToUpper(ltr(title)), sizeMicro, 18, 600, p.muted).LetterSpacing(0.5).SingleLine().Grow(1).MinWidth(0)
 			}
-			n := fmt.Sprintf("%d nodes", countServers)
+			n := fmt.Sprintf(tr("%d nodes"), countServers)
 			if countServers == 1 {
-				n = "1 node"
+				n = tr("1 node")
 			}
 			drawCount := func() { label(c, n, sizeCaption, 18, 400, p.muted) }
 			if toggle == nil {
@@ -240,10 +240,10 @@ func (a *app) groupHeader(c *ui.Context, p palette, id, title string, countServe
 				drawCount()
 			} else {
 				chevron := iconChevronDown
-				collapseTitle := "Collapse " + title
+				collapseTitle := tr("Collapse ") + title
 				if collapsed {
 					chevron = iconChevronRight
-					collapseTitle = "Expand " + title
+					collapseTitle = tr("Expand ") + title
 				}
 				name := ui.ButtonBase(c.Key("group-collapse-" + id)).Label(collapseTitle).Height(22).
 					Gap(tw(1)).AlignItems(ui.Center).Grow(1).Basis(0).MinWidth(0).Clip().Cursor(ui.CursorPointer)
@@ -257,7 +257,7 @@ func (a *app) groupHeader(c *ui.Context, p palette, id, title string, countServe
 					toggle()
 				}
 			}
-			if iconButton(c, "group-test-"+id, iconZap, "Test all "+title+" configs", p, iconXS, variantGhost, 10) {
+			if iconButton(c, "group-test-"+id, iconZap, tr("Test all ")+title+tr(" configs"), p, iconXS, variantGhost, 10) {
 				var targets []server
 				for _, s := range a.subscriptions.servers {
 					if s.key.sub == id || (id == "custom" && s.key.sub == "") {
@@ -268,7 +268,7 @@ func (a *app) groupHeader(c *ui.Context, p palette, id, title string, countServe
 					a.testServers(targets...)
 				}
 			}
-			if openDetails != nil && iconButton(c, "group-details-"+id, iconChevronRight, "Open "+title+" subscription", p, iconXS, variantGhost, 11) {
+			if openDetails != nil && iconButton(c, "group-details-"+id, iconChevronRight, tr("Open ")+title+tr(" subscription"), p, iconXS, variantGhost, 11) {
 				openDetails()
 			}
 		})
@@ -277,7 +277,7 @@ func (a *app) groupHeader(c *ui.Context, p palette, id, title string, countServe
 
 func (a *app) serverItem(c *ui.Context, p palette, s server) {
 	active, ok := a.activeKey()
-	if a.serverListRow(c, p, s, "Use "+s.cfg.GetName(), ok && active == s.key, false, false) {
+	if a.serverListRow(c, p, s, tr("Use ")+s.cfg.GetName(), ok && active == s.key, false, false) {
 		a.selectServer(s)
 	}
 }
@@ -339,27 +339,27 @@ func (a *app) serverRow(c *ui.Context, p palette) {
 	row.Children(func() {
 		flag, title, detail := serverTitle(s.cfg.GetName())
 		if !ok {
-			flag, title, detail = "🌐", "Select a server", ""
+			flag, title, detail = "🌐", tr("Select a server"), ""
 		}
 		ui.Column(c).Grow(1).Basis(0).MinWidth(0).Children(func() {
 			ui.Row(c).AlignItems(ui.Center).Gap(tw(1)).Children(func() {
 				flagElementSize(c, flag, 13*4.0/3, 13)
 				ltrLabel(c, title, sizeTitle, 17, 600, p.text)
 			})
-			subtitle := "Choose a server to connect"
+			subtitle := tr("Choose a server to connect")
 			if !ok && len(a.subscriptions.servers) == 0 {
-				subtitle = "Add a subscription to get started"
+				subtitle = tr("Add a subscription to get started")
 				if !a.reachable {
-					subtitle = "Waiting for available servers"
+					subtitle = tr("Waiting for available servers")
 				}
 			}
 			if ok {
 				sub := s.subName
 				extra := detail
 				if extra == "" {
-					extra = "Default server"
+					extra = tr("Default server")
 					if a.fallback() == pb.Fallback_FALLBACK_DIRECT {
-						extra = "Proxy server"
+						extra = tr("Proxy server")
 					}
 				}
 				subtitle = sub + " • " + extra

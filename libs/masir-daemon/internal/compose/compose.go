@@ -74,7 +74,10 @@ func Build(in Input) (Output, error) {
 	st := in.State
 	hasProxy := len(in.Active) > 0 || in.ActiveProfile != nil
 	proxy := profileTarget{tag: "direct"}
-	var graph profileGraph
+	graph := profileGraph{killSwitch: st.Settings.KillSwitch}
+	if st.Settings.KillSwitch && !hasProxy {
+		proxy.tag = "block"
+	}
 	if hasProxy {
 		proxy.tag = proxyTag
 	}
@@ -83,6 +86,10 @@ func Build(in Input) (Output, error) {
 	outbounds := []any{
 		obj{"tag": "direct", "protocol": "freedom"},
 		obj{"tag": "block", "protocol": "blackhole"},
+	}
+	if st.Settings.KillSwitch {
+		// Xray can use the first outbound if it finds no route or handler.
+		outbounds[0], outbounds[1] = outbounds[1], outbounds[0]
 	}
 	serverOutbounds := []json.RawMessage{}
 	if in.ActiveProfile != nil {
@@ -105,7 +112,7 @@ func Build(in Input) (Output, error) {
 		}
 		serverOutbounds = append(serverOutbounds, members...)
 	} else if hasProxy {
-		o, err := withTag(in.Active, proxy.tag)
+		o, err := withTag(in.Active, proxy.tag, st.Settings.KillSwitch)
 		if err != nil {
 			return Output{}, fmt.Errorf("selected config: %w", err)
 		}
@@ -152,7 +159,7 @@ func Build(in Input) (Output, error) {
 					serverOutbounds = append(serverOutbounds, members...)
 					target = balancer
 				} else {
-					o, err := withTag(c.Outbound, tag)
+					o, err := withTag(c.Outbound, tag, st.Settings.KillSwitch)
 					if err != nil {
 						return Output{}, fmt.Errorf("pinned config %s: %w", c.Name, err)
 					}
@@ -172,13 +179,16 @@ func Build(in Input) (Output, error) {
 		outbounds = append(outbounds, it.Config)
 		serverOutbounds = append(serverOutbounds, it.Config)
 	}
-	outbounds = append(outbounds,
-		// hijack A and AAAA so Xray's DNS answers them; other query types go out direct
-		obj{
-			"tag": "dns-out", "protocol": "dns",
-			"settings": obj{"rules": []obj{{"action": "hijack", "qType": "1,28"}, {"action": "direct"}}},
-		},
-	)
+	// Xray can resolve A and AAAA through DoH. Its DNS proxy otherwise forwards
+	// other record types in plaintext, which the Kill Switch must prevent.
+	dnsOther := "direct"
+	if st.Settings.KillSwitch {
+		dnsOther = "return"
+	}
+	outbounds = append(outbounds, obj{
+		"tag": "dns-out", "protocol": "dns",
+		"settings": obj{"rules": []obj{{"action": "hijack", "qType": "1,28"}, {"action": dnsOther}}},
+	})
 
 	// Inbounds.
 	var inbounds []any
@@ -276,7 +286,7 @@ func Build(in Input) (Output, error) {
 		rules = append(rules, m)
 	}
 	fallback := "direct"
-	if st.Settings.Fallback == store.FallbackProxy && hasProxy {
+	if st.Settings.Fallback == store.FallbackProxy && (hasProxy || st.Settings.KillSwitch) {
 		fallback = proxy.tag
 	}
 	if proxy.scoped {
@@ -363,12 +373,15 @@ func sniffing(fakedns bool) obj {
 	return obj{"enabled": true, "destOverride": dest, "routeOnly": true}
 }
 
-func withTag(raw json.RawMessage, tag string) (json.RawMessage, error) {
+func withTag(raw json.RawMessage, tag string, killSwitch bool) (json.RawMessage, error) {
 	var o map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &o); err != nil {
 		return nil, err
 	}
 	stripHysteriaServerMasquerade(o)
+	if killSwitch {
+		o = blockProviderDirect(o)
+	}
 	o["tag"], _ = json.Marshal(tag)
 	return json.Marshal(o)
 }

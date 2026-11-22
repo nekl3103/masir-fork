@@ -26,7 +26,7 @@ func (a *app) rulesHeader(c *ui.Context, p palette) {
 			ui.Box(c).Size(tw(4), tw(4)).Center().Shrink(0).Children(func() {
 				ui.Icon(c, iconChevronRight).FontSize(13).TextColor(p.muted).Rotate(90 * a.motion.rules.x)
 			})
-			label(c, "RULES", sizeMicro, 14, 500, p.muted).LetterSpacing(0.5)
+			label(c, tr("RULES"), sizeMicro, 14, 500, p.muted).LetterSpacing(0.5)
 		})
 		ui.Row(c).Gap(tw(2)).AlignItems(ui.Center).Children(func() {
 			noun := "rules"
@@ -38,7 +38,7 @@ func (a *app) rulesHeader(c *ui.Context, p palette) {
 				label(c, noun, sizeCaption, 15, 400, p.muted)
 			})
 			ui.Row(c).Margin(0, 0, 0, tw(1.5)).Children(func() {
-				if next, changed := nativeSwitch(c, "rules-switch", "Use rules", enabled, switchSubdued, false, false, p); changed {
+				if next, changed := nativeSwitch(c, "rules-switch", tr("Use rules"), enabled, switchSubdued, false, false, p); changed {
 					a.setRulesEnabled(next)
 				}
 			})
@@ -52,12 +52,12 @@ func (a *app) rulesHeader(c *ui.Context, p palette) {
 func (a *app) rulesPanel(c *ui.Context, p palette) {
 	enabled := a.rulesOn()
 	count := len(a.ruleList())
-	panelBar(c, p, func() { searchInput(c, "rule-search", &a.ruleQuery, "Search rules...", p) }, func() {
+	panelBar(c, p, func() { searchInput(c, "rule-search", &a.ruleQuery, tr("Search rules..."), p) }, func() {
 		ui.Row(c).Gap(tw(1)).AlignItems(ui.Center).Children(func() {
-			if iconButton(c, "route-check", iconGlobe, "Check domain route", p, iconMD, variantSubtle, 12) {
+			if iconButton(c, "route-check", iconGlobe, tr("Check domain route"), p, iconMD, variantSubtle, 12) {
 				a.openPage(routeCheckPath)
 			}
-			if iconButton(c, "rule-add", iconPlus, "Add rule", p, iconMD, variantSubtle, 12) {
+			if iconButton(c, "rule-add", iconPlus, tr("Add rule"), p, iconMD, variantSubtle, 12) {
 				a.newRule()
 			}
 		})
@@ -86,9 +86,9 @@ func (a *app) rulesPanel(c *ui.Context, p palette) {
 		height = maxHeight
 	}
 	if len(a.ruleItems) == 0 {
-		msg := "No rules configured."
+		msg := tr("No rules configured.")
 		if count > 0 {
-			msg = "No matching rules found."
+			msg = tr("No matching rules found.")
 		}
 		empty := ui.Column(c.Key("rule-empty")).AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 			label(c, msg, sizeSubhead, 18, 400, p.muted).TextAlign(ui.Center)
@@ -157,17 +157,17 @@ func (a *app) ruleSectionRow(c *ui.Context, p palette, title string, count int) 
 	ui.Column(c).Background(p.listHeader).Children(func() {
 		ui.Row(c).Padding(tw(1), tw(2), tw(0.5)).Radius(tw(1)).AlignItems(ui.Center).Shrink(0).Children(func() {
 			chevron := iconChevronDown
-			collapseTitle := "Collapse " + title
+			collapseTitle := tr("Collapse ") + tr(title)
 			if collapsed {
 				chevron = iconChevronRight
-				collapseTitle = "Expand " + title
+				collapseTitle = tr("Expand ") + tr(title)
 			}
 			if iconButton(c, "rule-section-collapse-"+title, chevron, collapseTitle, p, iconXS, variantGhost, 11) {
 				a.toggleRuleSectionCollapse(title)
 			}
 			btn := ui.ButtonBase(c.Key("rule-section-" + title)).Grow(1).Basis(0).MinWidth(0).Clip().Cursor(ui.CursorPointer)
 			btn.Children(func() {
-				label(c, fmt.Sprintf("%s (%d)", strings.ToUpper(ltr(title)), count), sizeMicro, 18, 600, p.muted).LetterSpacing(0.5).SingleLine().Grow(1).MinWidth(0)
+				label(c, fmt.Sprintf("%s (%d)", strings.ToUpper(ltr(tr(title))), count), sizeMicro, 18, 600, p.muted).LetterSpacing(0.5).SingleLine().Grow(1).MinWidth(0)
 			})
 			if btn.Clicked() {
 				a.toggleRuleSectionCollapse(title)
@@ -233,7 +233,7 @@ func (a *app) ruleRow(c *ui.Context, p palette, r *pb.RoutingRule) {
 			a.ruleContent(c, p, r)
 			// A touchpad swipe is macOS's gesture; elsewhere the row's actions have a
 			// button of their own.
-			if runtime.GOOS != "darwin" && iconButton(c, "more-"+r.RuleTag, iconMore, "Rule actions", p, iconXS, variantGhost, 12) {
+			if runtime.GOOS != "darwin" && iconButton(c, "more-"+r.RuleTag, iconMore, tr("Rule actions"), p, iconXS, variantGhost, 12) {
 				handled = true
 				b := row.Bounds()
 				a.menu = ruleMenu{open: true, tag: r.RuleTag, x: b.X + b.W - menuWidth - tw(2), y: b.Y + b.H}
@@ -270,7 +270,7 @@ func (a *app) ruleContent(c *ui.Context, p palette, r *pb.RoutingRule) {
 		iconTile(c, p, func() {
 			switch {
 			case icon != nil && info.appPath != "":
-				ui.Image(c, icon).Size(tw(7), tw(7)).Radius(4).MarginY(-4).Label("Rule application icon")
+				ui.Image(c, icon).Size(tw(7), tw(7)).Radius(4).MarginY(-4).Label(tr("Rule application icon"))
 			case icon != nil:
 				ui.Image(c, icon).Size(18, 18).Radius(4)
 			case info.flag != "":
@@ -302,19 +302,19 @@ func (a *app) swipeButtons(c *ui.Context, p palette, r *pb.RoutingRule, sw *swip
 			}
 			return
 		}
-		title := "Disable Rule"
+		title := tr("Disable Rule")
 		if r.Disabled {
-			title = "Enable Rule"
+			title = tr("Enable Rule")
 		}
 		if a.swipeButton(c, p, "power", title, iconPower, false, !r.Disabled) {
 			sw.close(now)
 			a.setRuleEnabled(r.RuleTag, r.Disabled)
 		}
-		if a.swipeButton(c, p, "edit", "Edit Rule", iconPencil, false, true) {
+		if a.swipeButton(c, p, "edit", tr("Edit Rule"), iconPencil, false, true) {
 			sw.close(now)
 			a.editRule(r)
 		}
-		if a.swipeButton(c, p, "delete", "Remove Rule", iconTrash, true, true) {
+		if a.swipeButton(c, p, "delete", tr("Remove Rule"), iconTrash, true, true) {
 			sw.confirmRemove = true
 		}
 	})
@@ -346,11 +346,11 @@ func (a *app) swipeButton(c *ui.Context, p palette, key, title string, icon *ui.
 func (a *app) destinationBadge(c *ui.Context, p palette, target string) {
 	switch {
 	case target == "block":
-		badge(c, "Block", iconBan, p.errorC, p.errorSurface, tw(7), 12)
+		badge(c, tr("Block"), iconBan, p.errorC, p.errorSurface, tw(7), 12)
 	case target == "proxy":
-		badge(c, "Proxy", iconShuffle, p.healthy, p.healthySurface, tw(7), 12)
+		badge(c, tr("Proxy"), iconShuffle, p.healthy, p.healthySurface, tw(7), 12)
 	case target == "direct":
-		badge(c, "Direct", iconDirect, p.direct, p.directSurface, tw(7), 12)
+		badge(c, tr("Direct"), iconDirect, p.direct, p.directSurface, tw(7), 12)
 	default:
 		flag, name := "🌐", strings.TrimPrefix(strings.TrimPrefix(target, "outbound:"), "config:")
 		if strings.HasPrefix(target, "config:") {

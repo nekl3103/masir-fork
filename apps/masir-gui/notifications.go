@@ -45,14 +45,14 @@ func (a *app) toastViewport(c *ui.Context, p palette) {
 			return
 		}
 		notice := notices[len(notices)-1]
-		title, icon, color := "Notice", iconInfo, p.accent
+		title, icon, color := tr("Notice"), iconInfo, p.accent
 		switch notice.Type {
 		case "error":
-			title, icon, color = "Error", iconBan, p.errorC
+			title, icon, color = tr("Error"), iconBan, p.errorC
 		case "warning":
-			title, icon, color = "Warning", iconWarning, p.degraded
+			title, icon, color = tr("Warning"), iconWarning, p.degraded
 		case "success":
-			title, icon, color = "Done", iconCheck, p.healthy
+			title, icon, color = tr("Done"), iconCheck, p.healthy
 		}
 		tint := float32(0.06)
 		if p.dark {
@@ -62,7 +62,7 @@ func (a *app) toastViewport(c *ui.Context, p palette) {
 		toast := ui.ToastBase(c, notice)
 		toast.Root.Column().FillWidth().Shrink(0).Padding(8, 10).Gap(4).Radius(cardRadius).
 			Background(surface).Border(1, color.Alpha(0.3)).Shadow(0, 3, 12, 0, ui.RGBA(0, 0, 0, 0.16)).
-			Label("Notification: " + title)
+			Label(tr("Notification: ") + title)
 		if !a.motion.instant {
 			toast.Root.Transition(ui.ElementTransition{Duration: 180 * time.Millisecond, Ease: easeApp, Position: true,
 				Enter: &ui.Motion{Y: 6}, Exit: &ui.Motion{Y: 6}})
@@ -77,7 +77,7 @@ func (a *app) toastViewport(c *ui.Context, p palette) {
 						// metrics, including fonts taller than the requested leading.
 						label(c, "\u00a0", sizeSubhead, 12, 400, p.text).Opacity(0).Role(ui.RoleNone)
 						ui.Box(c).Absolute().Fill().Center().Children(func() {
-							ui.Icon(c, icon).Label("Notification status icon").FontSize(12).TextColor(color)
+							ui.Icon(c, icon).Label(tr("Notification status icon")).FontSize(12).TextColor(color)
 						})
 					})
 					_, height := c.Size()
@@ -85,7 +85,7 @@ func (a *app) toastViewport(c *ui.Context, p palette) {
 					if notice.Action != "" {
 						messageLimit = height - 96
 					}
-					ui.Scroll(c).Label("Notification message").Grow(1).Basis(0).MinWidth(0).
+					ui.Scroll(c).Label(tr("Notification message")).Grow(1).Basis(0).MinWidth(0).
 						MaxHeight(max(32, messageLimit)).ScrollbarInsets(0, 0, 0).Children(func() {
 						ui.Column(c).Gap(2).Shrink(0).Children(func() {
 							label(c, notice.Title, sizeSubhead, 12, 400, p.text).Selectable()
@@ -95,7 +95,7 @@ func (a *app) toastViewport(c *ui.Context, p palette) {
 						})
 					})
 				})
-				close := toast.CloseButton().Label("Dismiss notification").Size(24, 24).Radius(5).Shrink(0).Cursor(ui.CursorPointer).Center()
+				close := toast.CloseButton().Label(tr("Dismiss notification")).Size(24, 24).Radius(5).Shrink(0).Cursor(ui.CursorPointer).Center()
 				if close.Hovered() {
 					close.Background(color.Alpha(0.12))
 				}

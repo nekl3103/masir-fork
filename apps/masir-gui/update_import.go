@@ -21,7 +21,7 @@ func desktopComponents(dir string) (string, error) {
 			return "", err
 		}
 		if len(entries) != 1 || filepath.Ext(entries[0].Name()) != ".app" {
-			return "", fmt.Errorf("prepared update has no unique app bundle")
+			return "", fmt.Errorf("%s", tr("prepared update has no unique app bundle"))
 		}
 		return filepath.Join(dir, entries[0].Name(), "Contents", "Resources", "bin"), nil
 	}
@@ -49,7 +49,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 		defer f.Close()
 		b, err := io.ReadAll(io.LimitReader(f, limit+1))
 		if int64(len(b)) > limit {
-			return nil, fmt.Errorf("oversized %s", name)
+			return nil, fmt.Errorf(tr("oversized %s"), name)
 		}
 		return b, err
 	}
@@ -66,7 +66,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 		return err
 	}
 	if !sameVersion(d.Version, version) {
-		return fmt.Errorf("desktop component version differs from the app update")
+		return fmt.Errorf("%s", tr("desktop component version differs from the app update"))
 	}
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Minute)
 	defer cancel()
@@ -96,7 +96,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 		expected, ok := d.Files[name]
 		if !ok || expected.Size <= 0 || expected.Size > updatebundle.MaxFileSize {
 			f.Close()
-			return fmt.Errorf("invalid component %s", name)
+			return fmt.Errorf(tr("invalid component %s"), name)
 		}
 		var sent int64
 		buf := make([]byte, 128<<10)
@@ -106,7 +106,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 				sent += int64(n)
 				if sent > expected.Size {
 					f.Close()
-					return fmt.Errorf("component %s exceeds signed size", name)
+					return fmt.Errorf(tr("component %s exceeds signed size"), name)
 				}
 				if err := send(&pb.ImportDesktopUpdateRequest{File: name, Data: append([]byte(nil), buf[:n]...)}); err != nil {
 					f.Close()
@@ -123,7 +123,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 		}
 		f.Close()
 		if sent != expected.Size {
-			return fmt.Errorf("component %s is truncated", name)
+			return fmt.Errorf(tr("component %s is truncated"), name)
 		}
 	}
 	response, err := stream.CloseAndRecv()
@@ -131,7 +131,7 @@ func importComponentDirectory(ctx context.Context, client pb.DaemonServiceClient
 		return err
 	}
 	if !sameVersion(response.Version, version) {
-		return fmt.Errorf("service installed an unexpected version")
+		return fmt.Errorf("%s", tr("service installed an unexpected version"))
 	}
 	return nil
 }

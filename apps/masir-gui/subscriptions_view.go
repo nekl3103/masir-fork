@@ -9,6 +9,7 @@ import (
 	"time"
 
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/ui"
 )
 
@@ -41,37 +42,44 @@ func subscriptionProvider(s *pb.Subscription) string {
 	if err == nil && u.Hostname() != "" {
 		return u.Hostname()
 	}
-	return "Provider not specified"
+	return tr("Provider not specified")
 }
 
 func subscriptionUsage(s *pb.Subscription) (string, float32) {
 	u := s.GetUsage()
 	if u == nil {
-		return "Usage not reported", 0
+		return tr("Usage not reported"), 0
 	}
 	used := float64(u.GetUploadBytes()) + float64(u.GetDownloadBytes())
 	if u.TotalBytes <= 0 {
-		return fmt.Sprintf("%.1f GB used · Unlimited", used/1e9), 0
+		return fmt.Sprintf(tr("%.1f GB used · Unlimited"), used/1e9), 0
 	}
-	return fmt.Sprintf("%.1f / %.1f GB", used/1e9, float64(u.TotalBytes)/1e9), float32(min(1, max(0, used/float64(u.TotalBytes))))
+	return fmt.Sprintf(tr("%.1f / %.1f GB"), used/1e9, float64(u.TotalBytes)/1e9), float32(min(1, max(0, used/float64(u.TotalBytes))))
 }
 
 func subscriptionExpiry(s *pb.Subscription, now time.Time) string {
 	ms := s.GetUsage().GetExpireAtMs()
 	if ms == 0 {
-		return "No expiry reported"
+		return tr("No expiry reported")
 	}
 	if ms <= now.UnixMilli() {
-		return "Expired · " + time.UnixMilli(ms).Format("Jan 2, 2006")
+		return tr("Expired · ") + subscriptionDate(time.UnixMilli(ms), "Jan 2, 2006", "yMMMd")
 	}
-	return "Expires " + time.UnixMilli(ms).Format("Jan 2, 2006")
+	return tr("Expires ") + subscriptionDate(time.UnixMilli(ms), "Jan 2, 2006", "yMMMd")
+}
+
+func subscriptionDate(date time.Time, englishLayout, skeleton string) string {
+	if appLanguage() == "ru" {
+		return i18n.FormatDate("ru", date, i18n.DateOptions{Skeleton: skeleton})
+	}
+	return date.Format(englishLayout)
 }
 
 func refreshTime(ms int64) string {
 	if ms == 0 {
-		return "Never"
+		return tr("Never")
 	}
-	return time.UnixMilli(ms).Local().Format("Jan 2, 15:04")
+	return subscriptionDate(time.UnixMilli(ms).Local(), "Jan 2, 15:04", "MMMdHm")
 }
 
 func (a *app) subscriptionsView(c *ui.Context, p palette) {
@@ -79,16 +87,16 @@ func (a *app) subscriptionsView(c *ui.Context, p palette) {
 	ui.Column(c).Fill().Children(func() {
 		ui.Column(c).Padding(pageInset, pageInset, 0).Shrink(0).Children(func() {
 			add := func() {
-				if iconButton(c, "subscriptions-add", iconPlus, "Add Subscription", p, iconSM, variantGhost, 18) {
+				if iconButton(c, "subscriptions-add", iconPlus, tr("Add Subscription"), p, iconSM, variantGhost, 18) {
 					a.openPage(addSubscriptionPath)
 				}
 			}
 			if len(subs) == 0 {
-				a.pageHeader(c, p, "Subscriptions", add)
+				a.pageHeader(c, p, tr("Subscriptions"), add)
 				return
 			}
-			a.pageHeader(c, p, "Subscriptions", func() {
-				if iconButton(c, "subscriptions-refresh-all", iconRefresh, "Refresh all subscriptions", p, iconSM, variantGhost, 16) {
+			a.pageHeader(c, p, tr("Subscriptions"), func() {
+				if iconButton(c, "subscriptions-refresh-all", iconRefresh, tr("Refresh all subscriptions"), p, iconSM, variantGhost, 16) {
 					for _, sub := range subs {
 						a.refreshSubscription(sub.Id)
 					}
@@ -96,14 +104,14 @@ func (a *app) subscriptionsView(c *ui.Context, p palette) {
 			}, add)
 		})
 		if len(subs) == 0 {
-			label(c, "No subscriptions yet. Add a subscription to import servers.", sizeBody, 18, 400, p.muted).Padding(0, pageInset, pageInset)
+			label(c, tr("No subscriptions yet. Add a subscription to import servers."), sizeBody, 18, 400, p.muted).Padding(0, pageInset, pageInset)
 			return
 		}
 		containListScroll(ui.List(c, &a.subscriptionList, len(subs), func(i int) {
 			s := a.subscriptions.subscriptions[i]
 			a.subscriptionCard(c, p, s)
 
-		})).Label("Subscription list").Padding(0, pageInset, pageInset).ScrollbarInsets(0, 2, 0).Gap(8).Grow(1).Basis(0).MinHeight(0)
+		})).Label(tr("Subscription list")).Padding(0, pageInset, pageInset).ScrollbarInsets(0, 2, 0).Gap(8).Grow(1).Basis(0).MinHeight(0)
 	})
 }
 
@@ -111,18 +119,18 @@ func (a *app) saveSubscription() {
 	st := &a.subscriptionPage
 	interval, err := strconv.ParseUint(strings.TrimSpace(st.interval), 10, 32)
 	if err != nil {
-		st.err = "Enter an interval in whole minutes, or 0 for automatic."
+		st.err = tr("Enter an interval in whole minutes, or 0 for automatic.")
 		return
 	}
 	links := sourceURLs(st.url, st.sources)
 	if len(links) == 0 {
-		st.err = "Enter at least one subscription URL or TUIC link."
+		st.err = tr("Enter at least one subscription URL or TUIC link.")
 		return
 	}
 	for _, link := range links {
 		u, err := url.Parse(link)
 		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http" && u.Scheme != "tuic") {
-			st.err = "Enter an HTTP(S) subscription URL or a TUIC link."
+			st.err = tr("Enter an HTTP(S) subscription URL or a TUIC link.")
 			return
 		}
 	}
@@ -184,9 +192,9 @@ func (a *app) subscriptionAction(action string, req *pb.AlterSubscriptionRequest
 				if a.collapsedSubs != nil {
 					delete(a.collapsedSubs, id)
 				}
-				msg := "Subscription deleted"
+				msg := tr("Subscription deleted")
 				if subName != "" {
-					msg = fmt.Sprintf("Subscription %q deleted", subName)
+					msg = fmt.Sprintf(tr("Subscription %q deleted"), subName)
 				}
 				a.notify(msg)
 			}
@@ -198,7 +206,7 @@ func (a *app) subscriptionAction(action string, req *pb.AlterSubscriptionRequest
 func (a *app) subscriptionCard(c *ui.Context, p palette, s *pb.Subscription) {
 	cardBox(c, p, func() {
 		handled := false
-		b := ui.ButtonBase(c.Key(s.Id)).Label("Open "+subscriptionName(s)).FillWidth().MinWidth(0).Padding(8, 10, 6).Cursor(ui.CursorPointer)
+		b := ui.ButtonBase(c.Key(s.Id)).Label(tr("Open ")+subscriptionName(s)).FillWidth().MinWidth(0).Padding(8, 10, 6).Cursor(ui.CursorPointer)
 		if b.Hovered() {
 			b.Background(p.cardHover)
 		}
@@ -215,9 +223,9 @@ func (a *app) subscriptionCard(c *ui.Context, p palette, s *pb.Subscription) {
 
 					ui.Row(c).FillWidth().Justify(ui.SpaceBetween).AlignItems(ui.Center).Gap(8).Children(func() {
 						label(c, subscriptionProvider(s), sizeCaption, 14, 400, p.muted).SingleLine()
-						n := fmt.Sprintf("%d nodes", s.ConfigCount)
+						n := fmt.Sprintf(tr("%d nodes"), s.ConfigCount)
 						if s.ConfigCount == 1 {
-							n = "1 node"
+							n = tr("1 node")
 						}
 						label(c, n, sizeCaption, 14, 400, p.muted)
 					})
@@ -225,16 +233,16 @@ func (a *app) subscriptionCard(c *ui.Context, p palette, s *pb.Subscription) {
 
 				u := s.GetUsage()
 				if u == nil {
-					label(c, "Usage not shared by provider", sizeCaption, 15, 400, p.tertiary)
+					label(c, tr("Usage not shared by provider"), sizeCaption, 15, 400, p.tertiary)
 				} else {
 					used := max(0, float64(u.UploadBytes)+float64(u.DownloadBytes))
 					ui.Column(c).Gap(5).Children(func() {
 						ui.Row(c).Justify(ui.SpaceBetween).Gap(8).Children(func() {
-							label(c, subscriptionBytes(used)+" used", sizeCaption, 15, 500, p.text).SingleLine()
-							remaining := "Unlimited"
+							label(c, subscriptionBytes(used)+tr(" used"), sizeCaption, 15, 500, p.text).SingleLine()
+							remaining := tr("Unlimited")
 							color := p.muted
 							if u.TotalBytes > 0 {
-								remaining = subscriptionBytes(max(0, float64(u.TotalBytes)-used)) + " left"
+								remaining = subscriptionBytes(max(0, float64(u.TotalBytes)-used)) + tr(" left")
 								if used >= float64(u.TotalBytes) {
 									color = p.errorC
 								}
@@ -266,9 +274,9 @@ func (a *app) subscriptionCard(c *ui.Context, p palette, s *pb.Subscription) {
 				})
 				if s.LastError != "" {
 					ui.Row(c).Padding(5, 7).Radius(5).Background(p.errorSurface).Children(func() {
-						message := "Refresh failed · Existing nodes kept"
+						message := tr("Refresh failed · Existing nodes kept")
 						if s.ConfigCount == 0 {
-							message = "Refresh failed · No servers available"
+							message = tr("Refresh failed · No servers available")
 						}
 						label(c, message, sizeCaption, 15, 500, p.errorC)
 					})
@@ -291,15 +299,15 @@ func subscriptionName(s *pb.Subscription) string {
 func subscriptionBytes(n float64) string {
 	switch {
 	case n >= 1e12:
-		return fmt.Sprintf("%.1f TB", n/1e12)
+		return fmt.Sprintf(tr("%.1f TB"), n/1e12)
 	case n >= 1e9:
-		return fmt.Sprintf("%.1f GB", n/1e9)
+		return fmt.Sprintf(tr("%.1f GB"), n/1e9)
 	case n >= 1e6:
-		return fmt.Sprintf("%.0f MB", n/1e6)
+		return fmt.Sprintf(tr("%.0f MB"), n/1e6)
 	case n >= 1e3:
-		return fmt.Sprintf("%.0f KB", n/1e3)
+		return fmt.Sprintf(tr("%.0f KB"), n/1e3)
 	default:
-		return fmt.Sprintf("%.0f B", n)
+		return fmt.Sprintf(tr("%.0f B"), n)
 	}
 }
 
@@ -322,44 +330,44 @@ func subscriptionUsageBar(c *ui.Context, p palette, fraction float32) {
 
 func subscriptionUpdated(ms int64, now time.Time) string {
 	if ms == 0 {
-		return "Not refreshed yet"
+		return tr("Not refreshed yet")
 	}
 	elapsed := now.Sub(time.UnixMilli(ms))
 	switch {
 	case elapsed < time.Minute:
-		return "Updated just now"
+		return tr("Updated just now")
 	case elapsed < time.Hour:
-		return fmt.Sprintf("Updated %dm ago", int(elapsed.Minutes()))
+		return fmt.Sprintf(tr("Updated %dm ago"), int(elapsed.Minutes()))
 	case elapsed < 24*time.Hour:
-		return fmt.Sprintf("Updated %dh ago", int(elapsed.Hours()))
+		return fmt.Sprintf(tr("Updated %dh ago"), int(elapsed.Hours()))
 	default:
-		return "Updated " + time.UnixMilli(ms).Local().Format("Jan 2")
+		return tr("Updated ") + subscriptionDate(time.UnixMilli(ms).Local(), "Jan 2", "MMMd")
 	}
 }
 
 func subscriptionRefreshInterval(s *pb.Subscription) string {
 	n := s.UpdateIntervalMinutes
 	if n == 0 {
-		return "Automatic"
+		return tr("Automatic")
 	}
 	if n%1440 == 0 {
-		return fmt.Sprintf("Every %dd", n/1440)
+		return fmt.Sprintf(tr("Every %dd"), n/1440)
 	}
 	if n%60 == 0 {
-		return fmt.Sprintf("Every %dh", n/60)
+		return fmt.Sprintf(tr("Every %dh"), n/60)
 	}
-	return fmt.Sprintf("Every %dm", n)
+	return fmt.Sprintf(tr("Every %dm"), n)
 }
 
 func subscriptionCardExpiry(s *pb.Subscription, now time.Time) string {
 	remaining := time.UnixMilli(s.GetUsage().GetExpireAtMs()).Sub(now)
 	switch {
 	case remaining <= 0:
-		return "Expired"
+		return tr("Expired")
 	case remaining <= 24*time.Hour:
-		return "Expires within 24 hours"
+		return tr("Expires within 24 hours")
 	case remaining < 7*24*time.Hour:
-		return fmt.Sprintf("Expires in %d days", int(math.Ceil(remaining.Hours()/24)))
+		return fmt.Sprintf(tr("Expires in %d days"), int(math.Ceil(remaining.Hours()/24)))
 	default:
 		return subscriptionExpiry(s, now)
 	}
@@ -367,13 +375,13 @@ func subscriptionCardExpiry(s *pb.Subscription, now time.Time) string {
 
 func (a *app) subscriptionActiveBadge(c *ui.Context, p palette, id string) {
 	if key, ok := a.activeKey(); ok && key.sub == id {
-		badge(c, "Active", nil, p.healthy, p.healthySurface, 16, 0)
+		badge(c, tr("Active"), nil, p.healthy, p.healthySurface, 16, 0)
 	}
 }
 
 func (a *app) subscriptionRefreshButton(c *ui.Context, p palette, s *pb.Subscription) bool {
 	busy := a.subscriptionRefreshing[s.Id]
-	b := ui.ButtonBase(c.Key("refresh-"+s.Id)).Label("Refresh "+subscriptionName(s)).Tooltip("Refresh subscription").Size(16, 16).Radius(4).Center().Cursor(ui.CursorPointer)
+	b := ui.ButtonBase(c.Key("refresh-"+s.Id)).Label(tr("Refresh ")+subscriptionName(s)).Tooltip(tr("Refresh subscription")).Size(16, 16).Radius(4).Center().Cursor(ui.CursorPointer)
 	if b.Hovered() {
 		b.Background(p.cardHover)
 	}

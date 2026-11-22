@@ -19,9 +19,9 @@ func importLegacyDesktop(dir string, authorized func()) error {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) && exit.ExitCode() == 15 {
-			return &elevationError{kind: elevationCancelled, code: exit.ExitCode(), msg: "Administrator permission was declined"}
+			return &elevationError{kind: elevationCancelled, code: exit.ExitCode(), msg: tr("Administrator permission was declined")}
 		}
-		return fmt.Errorf("offline service upgrade: %s: %w", out, err)
+		return fmt.Errorf(tr("offline service upgrade: %s: %w"), out, err)
 	}
 	if authorized != nil {
 		authorized()

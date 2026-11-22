@@ -12,9 +12,9 @@ import (
 func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 	ui.Column(c).Fill().Children(func() {
 		ui.Column(c).Bind(&a.importHeader).Padding(pageInset, pageInset, 0).Shrink(0).Children(func() {
-			a.pageHeader(c, p, "Add Subscription")
+			a.pageHeader(c, p, tr("Add Subscription"))
 		})
-		ui.Scroll(c).Label("Subscription import form").Padding(0, pageInset).ScrollbarInsets(0, 2, 0).Grow(1).Basis(0).MinHeight(0).Children(func() {
+		ui.Scroll(c).Label(tr("Subscription import form")).Padding(0, pageInset).ScrollbarInsets(0, 2, 0).Grow(1).Basis(0).MinHeight(0).Children(func() {
 			content := ui.Column(c).Bind(&a.importContent).Gap(tw(2.5)).Shrink(0)
 			previousHeight := a.importContent.Bounds(c).H
 			content.Draw(func(_ *ui.Painter, r ui.Rect) {
@@ -24,10 +24,10 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 			})
 			content.Children(func() {
 				cardBox(c, p, func() {
-					ui.Column(c).Label("Subscription link fields").Padding(tw(2.5), tw(3)).Gap(tw(2.5)).Children(func() {
-						nameSubmitted := field(c, p, "sub-name", "Label (Optional)", &a.subName, "e.g. My Server Group", iconTag, p.muted, nil)
-						enter := field(c, p, "sub-url", "Subscription URL", &a.subURL, "https://example.com/sub/...", iconLink, p.muted, func() {
-							if iconButton(c, "paste", iconClipboard, "Paste from clipboard", p, iconXS, variantSubtle, 14) {
+					ui.Column(c).Label(tr("Subscription link fields")).Padding(tw(2.5), tw(3)).Gap(tw(2.5)).Children(func() {
+						nameSubmitted := field(c, p, "sub-name", tr("Label (Optional)"), &a.subName, tr("e.g. My Server Group"), iconTag, p.muted, nil)
+						enter := field(c, p, "sub-url", tr("Subscription URL"), &a.subURL, "https://example.com/sub/...", iconLink, p.muted, func() {
+							if iconButton(c, "paste", iconClipboard, tr("Paste from clipboard"), p, iconXS, variantSubtle, 14) {
 								if s := readClipboard(); s != "" {
 									a.subURL = s
 								}
@@ -40,9 +40,9 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 					})
 				})
 
-				label(c, "Paste a subscription URL or a tuic:// link.", sizeCaption, 15, 400, p.muted).Padding(0, tw(1))
+				label(c, tr("Paste a subscription URL or a tuic:// link."), sizeCaption, 15, 400, p.muted).Padding(0, tw(1))
 				if a.subError != "" {
-					ui.Row(c).Label("Subscription import error").Gap(tw(1.5)).Padding(tw(2.5), tw(3)).Radius(cardRadius).Background(p.errorSurface).Border(1, p.errorBorder).Children(func() {
+					ui.Row(c).Label(tr("Subscription import error")).Gap(tw(1.5)).Padding(tw(2.5), tw(3)).Radius(cardRadius).Background(p.errorSurface).Border(1, p.errorBorder).Children(func() {
 						label(c, a.subError, sizeCaption, 15, 400, p.errorC).Selectable()
 					})
 				}
@@ -50,9 +50,9 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 		})
 		// An error can grow the form; keep its action reachable at the panel's foot.
 		ui.Column(c).Bind(&a.importFooter).Padding(8, pageInset, pageInset).Shrink(0).Children(func() {
-			text := "Import Subscription"
+			text := tr("Import Subscription")
 			if a.subBusy {
-				text = "Importing & Parsing..."
+				text = tr("Importing & Parsing...")
 			}
 			if button(c, "import", text, true, len(sourceURLs(a.subURL, a.subSources)) == 0, a.subBusy, p, cardRadius) {
 				a.addSubscription()
@@ -86,10 +86,10 @@ func (a *app) addSubscriptionView(c *ui.Context, p palette) {
 func sourceFields(c *ui.Context, p palette, key string, links *[]string, busy bool) {
 	remove := -1
 	for i := range *links {
-		title := fmt.Sprintf("Source %d", i+2)
+		title := fmt.Sprintf(tr("Source %d"), i+2)
 		fieldKey := fmt.Sprintf("%s-%d", key, i)
 		field(c, p, fieldKey, title, &(*links)[i], "https://… or tuic://…", iconLink, p.muted, func() {
-			if !busy && iconButton(c, fieldKey+"-remove", iconX, "Remove "+title, p, iconXS, variantSubtle, 14) {
+			if !busy && iconButton(c, fieldKey+"-remove", iconX, tr("Remove ")+title, p, iconXS, variantSubtle, 14) {
 				remove = i
 			}
 		})
@@ -97,7 +97,7 @@ func sourceFields(c *ui.Context, p palette, key string, links *[]string, busy bo
 	if remove >= 0 {
 		*links = slices.Delete(*links, remove, remove+1)
 	}
-	if len(*links) < 7 && button(c, key+"-more", "Add source", false, busy, false, p) {
+	if len(*links) < 7 && button(c, key+"-more", tr("Add source"), false, busy, false, p) {
 		*links = append(*links, "")
 	}
 }

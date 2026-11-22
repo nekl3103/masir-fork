@@ -57,7 +57,7 @@ func installBlockOf(exe string) installBlock {
 func platformHelperTrusted() (string, error) {
 	bin := bundledBinary()
 	if bin == "" {
-		return "", errors.New("this Masir has no bundled masir to install the update")
+		return "", errors.New(tr("this Masir has no bundled masir to install the update"))
 	}
 	real, err := filepath.EvalSymlinks(bin)
 	if err != nil {
@@ -73,7 +73,7 @@ func platformHelperTrusted() (string, error) {
 // by group or others, and not a symlink.
 func rootOwnedPath(path string, lstat func(string) (os.FileInfo, error)) error {
 	if !filepath.IsAbs(path) {
-		return fmt.Errorf("%s isn't an absolute path", path)
+		return fmt.Errorf(tr("%s isn't an absolute path"), path)
 	}
 	for p := filepath.Clean(path); ; p = filepath.Dir(p) {
 		fi, err := lstat(p)
@@ -83,11 +83,11 @@ func rootOwnedPath(path string, lstat func(string) (os.FileInfo, error)) error {
 		st, ok := fi.Sys().(*syscall.Stat_t)
 		switch {
 		case fi.Mode()&os.ModeSymlink != 0:
-			return fmt.Errorf("%s is a symlink; reinstall Masir", p)
+			return fmt.Errorf(tr("%s is a symlink; reinstall Masir"), p)
 		case !ok || st.Uid != 0:
-			return fmt.Errorf("%s isn't owned by root; reinstall Masir", p)
+			return fmt.Errorf(tr("%s isn't owned by root; reinstall Masir"), p)
 		case fi.Mode().Perm()&0o022 != 0:
-			return fmt.Errorf("%s can be changed by other accounts; reinstall Masir", p)
+			return fmt.Errorf(tr("%s can be changed by other accounts; reinstall Masir"), p)
 		}
 		if filepath.Dir(p) == p {
 			return nil
@@ -100,7 +100,7 @@ func rootOwnedPath(path string, lstat func(string) (os.FileInfo, error)) error {
 func platformFetchPackage(ctx context.Context, r packageFetch, progress func(done, total int64)) (packageFiles, error) {
 	bin := bundledBinary()
 	if bin == "" {
-		return packageFiles{}, errors.New("this Masir has no bundled masir to download the update")
+		return packageFiles{}, errors.New(tr("this Masir has no bundled masir to download the update"))
 	}
 	return runFetch(ctx, bin, r, progress)
 }
@@ -176,7 +176,7 @@ func parseFetchOutput(r io.Reader, progress func(done, total int64)) (packageFil
 		}
 	}
 	if f.pkg == "" || f.sums == "" || f.sig == "" {
-		return packageFiles{}, errors.New("the download ended without a verified package")
+		return packageFiles{}, errors.New(tr("the download ended without a verified package"))
 	}
 	return f, nil
 }

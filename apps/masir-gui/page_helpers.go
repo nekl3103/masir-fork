@@ -51,7 +51,7 @@ func (a *app) pageHeader(c *ui.Context, p palette, title string, actions ...func
 	sideWidth := max(tw(7), float32(len(actions))*(tw(6)+actionGap)-actionGap)
 	ui.Row(c).Padding(0, 0, pageInset).AlignItems(ui.Center).Shrink(0).Children(func() {
 		ui.Row(c).Width(sideWidth).Shrink(0).Children(func() {
-			if iconButton(c, "back", iconBack, "Back", p, iconSM, variantGhost, 16) {
+			if iconButton(c, "back", iconBack, tr("Back"), p, iconSM, variantGhost, 16) {
 				a.goBack()
 			}
 		})
@@ -154,13 +154,13 @@ func textEntry(c *ui.Context, p palette, key, title string, value *string, place
 		icon = iconTag
 	}
 	multiline := height > inputHeight
-	box := ui.Row(c.Key(key+"-control")).Label(title+" input").Height(max(inputHeight, height)).Gap(6).Padding(0, 10).Radius(inputRadius).AlignItems(ui.Center).Shrink(0).MinWidth(0)
+	box := ui.Row(c.Key(key+"-control")).Label(title+tr(" input")).Height(max(inputHeight, height)).Gap(6).Padding(0, 10).Radius(inputRadius).AlignItems(ui.Center).Shrink(0).MinWidth(0)
 	if multiline {
 		box.Padding(8, 10).AlignItems(ui.Start)
 	}
 	var in ui.Element
 	box.Children(func() {
-		glyph := ui.Icon(c, icon).Label(title + " icon").FontSize(14).TextColor(iconColor).Shrink(0)
+		glyph := ui.Icon(c, icon).Label(title + tr(" icon")).FontSize(14).TextColor(iconColor).Shrink(0)
 		if multiline {
 			glyph.Margin(1, 0, 0, 0)
 		}

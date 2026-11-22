@@ -31,6 +31,9 @@ func (s *Server) change(ctx context.Context, msg string, fn func(*store.State) e
 		return toStatus(err)
 	}
 	if err := s.applyLocked(ctx, next, true); err != nil {
+		if next.Settings.KillSwitch != s.state.Settings.KillSwitch {
+			_ = s.applyLocked(context.WithoutCancel(ctx), s.state, false)
+		}
 		return err
 	}
 	if err := store.Save(s.dir, next); err != nil {
@@ -115,18 +118,23 @@ func (s *Server) applyLockedWithCollection(ctx context.Context, st store.State, 
 			return status.Error(codes.Internal, err.Error())
 		}
 	}
+	protectedTun := ""
+	if tun && st.Settings.KillSwitch {
+		protectedTun = in.TunName
+	}
+	var nextProfile *xray.Profile
 	if runs {
-		if err := s.applyXray(ctx, p); err != nil {
-			mode := "proxy"
-			if tun {
-				mode = "tun"
-			}
-			s.trackErrorLocked(st, "xray_apply_failed", err, operationProps(ctx, map[string]any{"mode": mode}), true)
-			return status.Error(codes.Internal, err.Error())
+		nextProfile = p
+	}
+	if err := s.applyXray(ctx, nextProfile, protectedTun); err != nil {
+		mode := "off"
+		if tun {
+			mode = "tun"
+		} else if runs {
+			mode = "proxy"
 		}
-	} else if err := s.xray.Close(); err != nil {
-		s.trackErrorLocked(st, "xray_apply_failed", err, operationProps(ctx, map[string]any{"mode": "off"}), true)
-		return status.Error(codes.Internal, err.Error())
+		s.trackErrorLocked(st, "xray_apply_failed", err, operationProps(ctx, map[string]any{"mode": mode}), true)
+		return err
 	}
 	s.resolved = out.Rules
 	s.running = running{proxy: runs, tun: tun, tunName: in.TunName}
@@ -288,11 +296,30 @@ func (s *Server) handoverPatience(st store.State, err error) error {
 func probePorts(st store.State) error { return ports.Busy(st) }
 
 // applyXray keeps the shutdown check and start atomic with shutdown's final Close.
-func (s *Server) applyXray(ctx context.Context, p *xray.Profile) error {
+func (s *Server) applyXray(ctx context.Context, p *xray.Profile, protectedTun string) error {
 	s.xrayMu.Lock()
 	defer s.xrayMu.Unlock()
 	if s.shuttingDown.Load() {
 		return status.Error(codes.Unavailable, "the daemon is shutting down")
 	}
-	return s.xray.Apply(ctx, p)
+	if protectedTun != "" {
+		if err := s.firewall.Enable(context.WithoutCancel(ctx), protectedTun); err != nil {
+			return status.Error(codes.FailedPrecondition, "enable Kill Switch: "+err.Error())
+		}
+	}
+	var err error
+	if p == nil {
+		err = s.xray.Close()
+	} else {
+		err = s.xray.Apply(ctx, p)
+	}
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	if s.id.Privileged && !s.idle.Load() && protectedTun == "" {
+		if err := s.firewall.Disable(context.WithoutCancel(ctx)); err != nil {
+			return status.Error(codes.Internal, "disable Kill Switch: "+err.Error())
+		}
+	}
+	return nil
 }

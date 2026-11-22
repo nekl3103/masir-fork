@@ -15,6 +15,7 @@ import (
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/store"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/subs"
 	"github.com/Gozargah/Masir/libs/masir-daemon/internal/xray"
+	"github.com/Gozargah/Masir/libs/masir-daemon/killswitch"
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
 )
 
@@ -62,6 +63,7 @@ type Server struct {
 	// instead of a failure to report. It ends at the first apply so a later start (after
 	// Power went off) reports a busy port at once.
 	heldPorts atomic.Bool
+	firewall  killswitch.Firewall // synchronized by mu with the applied TUN policy
 	// shuttingDown is set when BeginShutdown begins. An apply that is waiting for a port
 	// (or building a config) must not bring Xray back up after shutdown closed it.
 	shuttingDown atomic.Bool

@@ -112,7 +112,13 @@ func TestEveryPageOpensAndReturns(t *testing.T) {
 				t.Fatalf("lastSub = %q, want %q, so the window can shrink from it", a.lastSub, pg.path)
 			}
 			wantHeight := pg.height
-			if pg.path == ruleEditPath {
+			switch pg.path {
+			case addSubscriptionPath:
+				wantHeight = a.importHeight
+				if wantHeight < pg.height || wantHeight > pageOf(subscriptionDetailsPath).height {
+					t.Fatalf("invalid measured import height %v", wantHeight)
+				}
+			case ruleEditPath:
 				wantHeight = a.rulePage.editHeight
 				if wantHeight <= 0 || wantHeight > pg.height {
 					t.Fatalf("invalid measured rule height %v", wantHeight)

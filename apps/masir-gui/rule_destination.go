@@ -10,14 +10,14 @@ func (a *app) ruleDestinationAccordion(c *ui.Context, p palette) {
 	st := &a.rulePage
 	open := st.expanded == "destination"
 	acc := ui.AccordionBase(c)
-	acc.Root.Label("Rule destination").Radius(cardRadius).Background(p.card).Border(1, p.borderDefault).Clip().Shrink(0).Children(func() {
+	acc.Root.Label(tr("Rule destination")).Radius(cardRadius).Background(p.card).Border(1, p.borderDefault).Clip().Shrink(0).Children(func() {
 		item := acc.Item(&open)
-		row := item.Trigger.Label("Choose destination").Disabled(st.busy).Height(40).Padding(0, 10).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+		row := item.Trigger.Label(tr("Choose destination")).Disabled(st.busy).Height(40).Padding(0, 10).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer)
 		if row.Hovered() {
 			row.Background(p.cardHover)
 		}
 		row.Children(func() {
-			label(c, "Target", sizeSubhead, 16, 500, p.text).Grow(1).Basis(0).MinWidth(0)
+			label(c, tr("Target"), sizeSubhead, 16, 500, p.text).Grow(1).Basis(0).MinWidth(0)
 			a.destinationBadge(c, p, st.target)
 			ui.Icon(c, iconChevronRight).FontSize(12).TextColor(p.tertiary).Rotate(90 * item.Progress())
 		})
@@ -26,7 +26,7 @@ func (a *app) ruleDestinationAccordion(c *ui.Context, p palette) {
 		}
 		item.Panel(func() {
 			panelTheme := ruleFormTheme(c, p, true)
-			body := ui.Themed(c, &panelTheme).Label("Destination options").Shrink(0)
+			body := ui.Themed(c, &panelTheme).Label(tr("Destination options")).Shrink(0)
 			body.Children(func() {
 				ui.Column(c).Padding(8).Gap(6).Children(func() {
 					index := -1
@@ -35,27 +35,27 @@ func (a *app) ruleDestinationAccordion(c *ui.Context, p palette) {
 							index = i
 						}
 					}
-					if ruleSegments(c, "destination-kind", &index, p, "Proxy", "Direct", "Block") {
+					if ruleSegments(c, "destination-kind", &index, p, tr("Proxy"), tr("Direct"), tr("Block")) {
 						st.target = []string{"proxy", "direct", "block"}[index]
 					}
-					hint := "Proxy follows your active server."
+					hint := tr("Proxy follows your active server.")
 					switch st.target {
 					case "direct":
-						hint = "Connect without the proxy."
+						hint = tr("Connect without the proxy.")
 					case "block":
-						hint = "Reject matching connections."
+						hint = tr("Reject matching connections.")
 					default:
 						if strings.HasPrefix(st.target, "config:") {
-							hint = "Pinned to the selected server."
+							hint = tr("Pinned to the selected server.")
 						}
 					}
 					label(c, hint, sizeMicro, 15, 400, p.muted)
 				})
 				if len(a.subscriptions.servers) == 0 {
-					label(c, "Add a subscription to pin a specific server.", sizeCaption, 16, 400, p.muted).Padding(8)
+					label(c, tr("Add a subscription to pin a specific server."), sizeCaption, 16, 400, p.muted).Padding(8)
 					return
 				}
-				panelBar(c, p, func() { searchInput(c, "destination-search", &a.ruleDestinationQuery, "Search servers…", p) }, func() {})
+				panelBar(c, p, func() { searchInput(c, "destination-search", &a.ruleDestinationQuery, tr("Search servers…"), p) }, func() {})
 				a.ruleDestinationServers(c, p)
 			})
 			// The parent scroll follows the native expansion immediately and stops
@@ -88,7 +88,7 @@ func (a *app) ruleDestinationServers(c *ui.Context, p palette) {
 		}
 	}
 	if len(items) == 0 {
-		label(c, "No matching servers.", sizeCaption, 16, 400, p.muted).Padding(12, 8)
+		label(c, tr("No matching servers."), sizeCaption, 16, 400, p.muted).Padding(12, 8)
 		return
 	}
 	height += float32(max(0, len(items)-1)) * 3
@@ -104,16 +104,16 @@ func (a *app) ruleDestinationServers(c *ui.Context, p palette) {
 		it := items[i]
 		if it.group != nil {
 			g := it.group
-			a.groupHeader(c, p, g.id, g.name, len(g.servers), folds.collapsed(a, g.id), "Target server group "+g.name, func() { folds.toggle(a, g.id) }, nil)
+			a.groupHeader(c, p, g.id, g.name, len(g.servers), folds.collapsed(a, g.id), tr("Target server group ")+g.name, func() { folds.toggle(a, g.id) }, nil)
 			return
 		}
 		a.ruleDestinationServer(c, p, it.srv)
-	})).Label("Target servers").Height(min(180, height)).Shrink(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
+	})).Label(tr("Target servers")).Height(min(180, height)).Shrink(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
 }
 
 func (a *app) ruleDestinationServer(c *ui.Context, p palette, s server) {
 	target := "config:" + s.key.sub + "/" + s.key.cfg
-	if a.serverListRow(c, p, s, "Pin "+s.subName+" "+s.cfg.Name, a.rulePage.target == target, true, a.rulePage.busy) {
+	if a.serverListRow(c, p, s, tr("Pin ")+s.subName+" "+s.cfg.Name, a.rulePage.target == target, true, a.rulePage.busy) {
 		a.rulePage.target = target
 	}
 }

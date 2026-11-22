@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Gozargah/Masir/libs/masir-core/service"
+	"github.com/Gozargah/Masir/libs/masir-daemon/killswitch"
 )
 
 // The service exits 0 only when asked to (Shutdown), so KeepAlive restarts it after a
@@ -121,6 +123,9 @@ func bootstrap() error {
 
 func uninstallService() error {
 	bootout()
+	if err := killswitch.Reset(context.Background()); err != nil {
+		return fmt.Errorf("disable Kill Switch: %w", err)
+	}
 	if err := os.Remove(service.DefinitionPath()); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}

@@ -25,29 +25,29 @@ func (a *app) subscriptionEditView(c *ui.Context, p palette) {
 	st := &a.subscriptionPage
 	ui.Column(c).Fill().Children(func() {
 		header := ui.Column(c).Bind(&st.editHeader).Padding(pageInset, pageInset, 0).Shrink(0)
-		header.Children(func() { a.pageHeader(c, p, "Edit Subscription") })
+		header.Children(func() { a.pageHeader(c, p, tr("Edit Subscription")) })
 		if a.selectedSubscription() == nil {
-			label(c, "This subscription is no longer available.", sizeBody, 18, 400, p.muted).Padding(0, pageInset)
+			label(c, tr("This subscription is no longer available."), sizeBody, 18, 400, p.muted).Padding(0, pageInset)
 			return
 		}
 		ui.Scroll(c).Padding(0, pageInset, pageInset).ScrollbarInsets(0, 2, 0).Grow(1).Basis(0).MinHeight(0).Children(func() {
-			form := ui.Column(c).Bind(&st.editContent).Label("Subscription edit content").Gap(10).Shrink(0)
+			form := ui.Column(c).Bind(&st.editContent).Label(tr("Subscription edit content")).Gap(10).Shrink(0)
 			form.Children(func() {
 				cardBox(c, p, func() {
 					ui.Column(c).Padding(10).Gap(10).Children(func() {
-						field(c, p, "edit-sub-name", "Name", &st.name, "Name", iconTag, p.muted, nil)
-						field(c, p, "edit-sub-url", "URL", &st.url, "https://…", iconLink, p.muted, nil)
+						field(c, p, "edit-sub-name", tr("Name"), &st.name, tr("Name"), iconTag, p.muted, nil)
+						field(c, p, "edit-sub-url", tr("URL"), &st.url, "https://…", iconLink, p.muted, nil)
 						sourceFields(c, p, "edit-source", &st.sources, st.busy)
-						field(c, p, "edit-sub-interval", "Interval (minutes; 0 = automatic)", &st.interval, "0", iconClock, p.muted, nil)
+						field(c, p, "edit-sub-interval", tr("Interval (minutes; 0 = automatic)"), &st.interval, "0", iconClock, p.muted, nil)
 					})
 				})
 				if st.err != "" {
 					label(c, st.err, sizeCaption, 15, 400, p.errorC)
 				}
-				if button(c, "save-subscription", "Save changes", true, false, st.busy, p) {
+				if button(c, "save-subscription", tr("Save changes"), true, false, st.busy, p) {
 					a.saveSubscription()
 				}
-				if button(c, "cancel-edit", "Cancel", false, st.busy, false, p) {
+				if button(c, "cancel-edit", tr("Cancel"), false, st.busy, false, p) {
 					a.goBack()
 				}
 			})

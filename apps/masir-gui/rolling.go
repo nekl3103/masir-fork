@@ -98,6 +98,6 @@ func floor32(f float32) float32 {
 // speedParts splits a speed into the number and the unit that follows it.
 func speedParts(bps uint64) (num, unit string) {
 	s := speed(bps)
-	i := strings.IndexAny(s, "KM")
+	i := strings.IndexAny(s, " KM")
 	return s[:i], s[i:]
 }

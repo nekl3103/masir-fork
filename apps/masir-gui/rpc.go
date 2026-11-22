@@ -18,18 +18,18 @@ func isConnectionDrop(err error) bool {
 func humanizeRPCError(err error) string {
 	st, ok := status.FromError(err)
 	if !ok {
-		return err.Error()
+		return tr(err.Error())
 	}
 
 	switch {
 	case isConnectionDrop(err):
-		return "can't reach the masir daemon"
+		return tr("can't reach the masir daemon")
 	case st.Code() == codes.Unimplemented:
-		return "the running masir daemon is older than this app; update masir"
+		return tr("the running masir daemon is older than this app; update masir")
 	case client.ErrorReason(err) == "ROOT_REQUIRED":
-		return "TUN needs the daemon to run as root"
+		return tr("TUN needs the daemon to run as root")
 	default:
-		return st.Message()
+		return tr(st.Message())
 	}
 }
 

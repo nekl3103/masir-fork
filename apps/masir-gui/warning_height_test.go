@@ -56,7 +56,7 @@ func TestMainWarningRequestsItsDrawnHeight(t *testing.T) {
 				tt.Frame()
 				tt.Advance(time.Second)
 				// Find reads the current layout, unlike Element.Bounds during a build.
-				footer, ok := tt.Find("Masir v0.1.0")
+				footer, ok := tt.Find("Masir Fork v0.1.0")
 				if !ok {
 					t.Fatal("footer not found")
 				}

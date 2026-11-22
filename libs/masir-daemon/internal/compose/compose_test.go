@@ -838,3 +838,71 @@ func TestProfileCompositionValidatesRoutingInputs(t *testing.T) {
 		t.Fatal("invalid observer URL was accepted")
 	}
 }
+
+func TestKillSwitchBlocksMissingProxyAndKeepsDirectRules(t *testing.T) {
+	st := store.State{Settings: store.DefaultSettings()}
+	st.Settings.KillSwitch = true
+	for tag, target := range map[string]store.Target{
+		"vpn":    {Kind: store.TargetProxy},
+		"pinned": {Kind: store.TargetConfig, SubscriptionID: "feed", ConfigID: "removed"},
+		"direct": {Kind: store.TargetDirect},
+	} {
+		if err := st.AddRule(tag, []byte(`{"domain":["full:`+tag+`.example"]}`), target, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out, cfg := build(t, Input{State: st})
+	if _, err := xray.ParseProfile(out.Config); err != nil {
+		t.Fatal(err)
+	}
+	if got := fallbackSelector(cfg); !reflect.DeepEqual(got, []any{"block"}) {
+		t.Fatalf("default tunnel route = %v, want block", got)
+	}
+	if got := cfg.Outbounds[0]["tag"]; got != "block" {
+		t.Fatalf("first outbound = %v, want block", got)
+	}
+	for _, tag := range []string{"vpn", "pinned", "masir-dns-upstream"} {
+		if got := ruleByTag(cfg, tag)["outboundTag"]; got != "block" {
+			t.Errorf("%s = %v, want block", tag, got)
+		}
+	}
+	if got := ruleByTag(cfg, "direct")["outboundTag"]; got != "direct" {
+		t.Errorf("direct rule = %v, want direct", got)
+	}
+	for _, outbound := range cfg.Outbounds {
+		if outbound["tag"] != "dns-out" {
+			continue
+		}
+		rules := outbound["settings"].(map[string]any)["rules"].([]any)
+		if got := rules[1].(map[string]any)["action"]; got != "return" {
+			t.Errorf("DNS record types other than A/AAAA = %v, want return", got)
+		}
+	}
+}
+
+func TestKillSwitchBlocksProviderDirectFallback(t *testing.T) {
+	st := store.State{Settings: store.DefaultSettings()}
+	st.Settings.KillSwitch = true
+	profile := &subs.OutboundProfile{
+		Outbounds: []json.RawMessage{
+			json.RawMessage(`{"tag":"provider-direct","protocol":"freedom"}`),
+			json.RawMessage(`{"tag":"relay","protocol":"vless","settings":{"address":"relay.example","port":443,"id":"b3deefe0-cf65-4c90-84bf-750d5ec07c08","encryption":"none"},"streamSettings":{"security":"tls"}}`),
+		},
+		Routing: json.RawMessage(`{"rules":[{"network":"tcp,udp","balancerTag":"pool"}],
+			"balancers":[{"tag":"pool","selector":["relay"],"fallbackTag":"provider-direct"}]}`),
+		DefaultBalancer: "pool",
+	}
+	out, cfg := build(t, Input{State: st, ActiveProfile: profile})
+	if _, err := xray.ParseProfile(out.Config); err != nil {
+		t.Fatal(err)
+	}
+	for _, outbound := range cfg.Outbounds {
+		if strings.HasSuffix(outbound["tag"].(string), "/provider-direct") {
+			if got := outbound["protocol"]; got != "blackhole" {
+				t.Errorf("provider direct fallback = %v, want blackhole", got)
+			}
+			return
+		}
+	}
+	t.Fatal("provider fallback is missing")
+}

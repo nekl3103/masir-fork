@@ -62,11 +62,11 @@ func (a *app) openXrayConfig() {
 			return a.d.GetXrayConfig(ctx, &pb.GetXrayConfigRequest{})
 		})
 		if err != nil {
-			a.post(func() { a.fail("Couldn't read the config: ", err) })
+			a.post(func() { a.fail(tr("Couldn't read the config: "), err) })
 			return
 		}
 		if res.GetJson() == "" {
-			a.post(func() { a.notifyWarning("Xray isn't running, so there's no config yet") })
+			a.post(func() { a.notifyWarning(tr("Xray isn't running, so there's no config yet")) })
 			return
 		}
 		var pretty bytes.Buffer
@@ -77,11 +77,11 @@ func (a *app) openXrayConfig() {
 		pretty.WriteByte('\n')
 		path := filepath.Join(os.TempDir(), "masir-xray-config.json")
 		if err := os.WriteFile(path, pretty.Bytes(), 0o600); err != nil {
-			a.post(func() { a.fail("Couldn't write the config: ", err) })
+			a.post(func() { a.fail(tr("Couldn't write the config: "), err) })
 			return
 		}
 		if err := openFileIn(path); err != nil {
-			a.post(func() { a.fail("Couldn't open the config: ", err) })
+			a.post(func() { a.fail(tr("Couldn't open the config: "), err) })
 		}
 	})
 }
@@ -91,7 +91,7 @@ func (a *app) openXrayConfig() {
 // applyTextSetting saves one settings field. When the daemon refuses it, the field goes
 // back to what the daemon has and a toast says why.
 func (a *app) applyTextSetting(f *textSetting, restore string, req *pb.UpdateSettingsRequest) {
-	a.mutate("Couldn't save the setting: ", nil, func() { f.text = restore }, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), nil, func() { f.text = restore }, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, req)
 		return err
 	})
@@ -104,7 +104,7 @@ func (a *app) saveBootstrapDNS(text string) {
 	list, err := parseIPList(text)
 	if err != nil || len(list) == 0 {
 		if err == nil {
-			a.notifyWarning("Bootstrap DNS needs at least one address")
+			a.notifyWarning(tr("Bootstrap DNS needs at least one address"))
 		} else {
 			a.notifyWarning(err.Error())
 		}
@@ -144,7 +144,7 @@ func parseIPList(text string) ([]string, error) {
 		return r == ',' || r == ' ' || r == '\t' || r == '\n'
 	}) {
 		if net.ParseIP(f) == nil {
-			return nil, fmt.Errorf("%s is not an IP address", f)
+			return nil, fmt.Errorf(tr("%s is not an IP address"), f)
 		}
 		out = append(out, f)
 	}
@@ -177,7 +177,7 @@ func (a *app) restoreDefaults() {
 			return a.d.GetSettings(ctx, &pb.GetSettingsRequest{})
 		})
 		if err != nil {
-			a.post(func() { a.fail("Couldn't load the defaults: ", err) })
+			a.post(func() { a.fail(tr("Couldn't load the defaults: "), err) })
 			return
 		}
 		d := res.GetDefaults()
@@ -193,11 +193,11 @@ func (a *app) restoreDefaults() {
 			XrayLogLevel:       proto.String(d.GetXrayLogLevel()),
 		}
 		a.post(func() {
-			a.mutate("Couldn't restore the defaults: ", func() {
+			a.mutate(tr("Couldn't restore the defaults: "), func() {
 				a.portText, a.portEdited = fmt.Sprint(d.GetProxyPort()), false
 				a.dns.text = strings.Join(d.GetDnsServers(), ", ")
 				a.tunDNS.text = strings.Join(d.GetTunDns(), ", ")
-				a.notifySuccess("Settings restored to their defaults")
+				a.notifySuccess(tr("Settings restored to their defaults"))
 			}, nil, func(ctx context.Context) error {
 				_, err := a.d.UpdateSettings(ctx, req)
 				return err
@@ -245,7 +245,7 @@ func (a *app) setLoginEnabled(on bool) {
 	}
 	if err != nil {
 		a.loginNeedsApproval = strings.Contains(err.Error(), "Login Items")
-		a.fail("Couldn't change it: ", err)
+		a.fail(tr("Couldn't change it: "), err)
 		return
 	}
 	a.loginNeedsApproval = false
@@ -269,7 +269,7 @@ func (a *app) applyPort() {
 	a.portEdited = false
 	n, err := strconv.Atoi(a.portText)
 	if err != nil || n < 1024 || n > 65535 {
-		a.notifyWarning("The port must be a number from 1024 to 65535")
+		a.notifyWarning(tr("The port must be a number from 1024 to 65535"))
 		a.portText = fmt.Sprint(a.status.GetSettings().GetProxyPort())
 		return
 	}
@@ -278,7 +278,7 @@ func (a *app) applyPort() {
 		return
 	}
 	oldPort := fmt.Sprint(a.status.GetSettings().GetProxyPort())
-	a.mutate("Couldn't save the setting: ", nil, func() { a.portText = oldPort }, func(ctx context.Context) error {
+	a.mutate(tr("Couldn't save the setting: "), nil, func() { a.portText = oldPort }, func(ctx context.Context) error {
 		_, err := a.d.UpdateSettings(ctx, &pb.UpdateSettingsRequest{ProxyPort: &port})
 		return err
 	})

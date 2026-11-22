@@ -12,26 +12,14 @@ import (
 func (a *app) settingsView(c *ui.Context, p palette) {
 	ui.Column(c).Fill().Children(func() {
 		ui.Column(c).Padding(pageInset, tw(4), 0, tw(4)).Shrink(0).Children(func() {
-			a.pageHeader(c, p, "Settings")
-		})
-		ui.Column(c).Padding(0, tw(4), tw(2), tw(4)).Gap(tw(0.5)).Shrink(0).Children(func() {
-			label(c, "Masir Fork "+versionLabel(a.version), sizeCaption, 16, 500, p.text)
-			daemon := "Daemon unavailable"
-			if version := a.status.GetVersion(); version != "" {
-				daemon = "Daemon · " + strings.TrimSpace(a.status.GetDistribution()+" "+versionLabel(version))
-			}
-			label(c, daemon, sizeCaption, 16, 400, p.muted)
-			if engine := a.status.GetAmneziawgVersion(); engine != "" {
-				label(c, "AmneziaWG "+versionLabel(engine), sizeCaption, 16, 400, p.muted)
-			} else if a.status.GetVersion() != "" {
-				label(c, "AmneziaWG version unavailable", sizeCaption, 16, 400, p.muted)
-			}
+			a.pageHeader(c, p, tr("Settings"))
 		})
 		// The scroll itself runs to the panel's edge, so its bar sits beside the cards
 		// instead of over them; the sections keep the same margins inside it.
 		ui.Scroll(c.Key("settings-scroll")).Grow(1).Basis(0).MinHeight(0).
 			ScrollbarInsets(0, 2, 0).Children(func() {
 			ui.Column(c).Gap(tw(3)).Padding(0, tw(4), tw(0), tw(4)).Shrink(0).Children(func() {
+				a.languageSection(c, p)
 				a.advancedSection(c, p)
 				a.dnsSection(c, p)
 				a.loggingSection(c, p)
@@ -52,8 +40,21 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 						})
 					}
 				})
+				ui.Column(c.Key("versions")).Gap(tw(0.5)).Shrink(0).Children(func() {
+					daemon := tr("Daemon unavailable")
+					if version := a.status.GetVersion(); version != "" {
+						daemon = tr("Daemon · ") + strings.TrimSpace(a.status.GetDistribution()+" "+versionLabel(version))
+					}
+					label(c, daemon, sizeCaption, 16, 400, p.muted)
+					label(c, "Masir Fork "+versionLabel(a.version), sizeCaption, 16, 500, p.text)
+					if engine := a.status.GetAmneziawgVersion(); engine != "" {
+						label(c, "AmneziaWG "+versionLabel(engine), sizeCaption, 16, 400, p.muted)
+					} else {
+						label(c, tr("AmneziaWG version unavailable"), sizeCaption, 16, 400, p.muted)
+					}
+				})
 				ui.Column(c).Padding(0, 0, tw(4)).Children(func() {
-					if button(c, "quit", "Quit Masir", false, false, false, p) {
+					if button(c, "quit", tr("Quit Masir"), false, false, false, p) {
 						quit()
 					}
 				})
@@ -62,16 +63,29 @@ func (a *app) settingsView(c *ui.Context, p palette) {
 	})
 }
 
+func (a *app) languageSection(c *ui.Context, p palette) {
+	cardBox(c, p, func() {
+		a.selectRow(c, p, "language", tr("Language"), "", appLanguage(),
+			[]choice{{"en", "English"}, {"ru", "Русский"}}, false, setAppLanguage)
+	})
+}
+
 func (a *app) advancedSection(c *ui.Context, p palette) {
-	titled(c, p, "ADVANCED", nil, func() {
+	titled(c, p, tr("ADVANCED"), nil, func() {
 		cardBox(c, p, func() {
+			hint := tr("Block VPN traffic when no VPN route is available.")
+			if runtime.GOOS == "darwin" {
+				hint = tr("Block VPN traffic on connection failure. With TUN enabled, also block network traffic if Masir stops unexpectedly.")
+			}
+			a.settingToggle(c, p, "kill-switch", tr("Kill Switch"), hint, a.killSwitchOn(), a.setKillSwitch)
+			cardDivider(c, p)
 			always := a.alwaysOnProxy()
-			a.settingToggle(c, p, "always", "Always-on Proxy Port", "A local proxy port always available for apps you configure manually, using your active outbound.", always, func(on bool) {
+			a.settingToggle(c, p, "always", tr("Always-on Proxy Port"), tr("A local proxy port always available for apps you configure manually, using your active outbound."), always, func(on bool) {
 				a.setAlwaysOnProxy(on)
 			})
 			cardDivider(c, p)
 			ui.Column(c.Key("port-row")).Padding(tw(2.5), tw(3)).Gap(tw(1)).Shrink(0).Children(func() {
-				in := labeledInput(c, p, "port", "Port Number", &a.portText, "7890", iconHash, p.muted, inputHeight, nil)
+				in := labeledInput(c, p, "port", tr("Port Number"), &a.portText, "7890", iconHash, p.muted, inputHeight, nil)
 				if in.Changed() {
 					a.portText = digitsOnly(a.portText)
 				}
@@ -82,39 +96,39 @@ func (a *app) advancedSection(c *ui.Context, p palette) {
 					a.portEdited = true
 				}
 
-				label(c, "Mixed SOCKS5 / HTTP", sizeCaption, 14.85, 400, p.muted)
+				label(c, tr("Mixed SOCKS5 / HTTP"), sizeCaption, 14.85, 400, p.muted)
 			})
 			cardDivider(c, p)
 			lan := a.allowLAN()
-			a.settingToggle(c, p, "lan", "Share on the Network", "Let other devices on your network use the local proxy.", lan, func(on bool) {
+			a.settingToggle(c, p, "lan", tr("Share on the Network"), tr("Let other devices on your network use the local proxy."), lan, func(on bool) {
 				a.setAllowLAN(on)
 			})
 			cardDivider(c, p)
 			login := a.loginEnabled()
-			hint := "Start Masir in the menu bar when you sign in."
+			hint = tr("Start Masir in the menu bar when you sign in.")
 			if a.loginNeedsApproval {
-				hint = "Allow Masir in Login Items to start at login."
+				hint = tr("Allow Masir in Login Items to start at login.")
 			}
-			a.settingToggle(c, p, "login", "Open at Login", hint, login, func(on bool) {
+			a.settingToggle(c, p, "login", tr("Open at Login"), hint, login, func(on bool) {
 				a.setLoginEnabled(on)
 			})
 			if a.loginNeedsApproval && runtime.GOOS == "darwin" {
 				ui.Row(c).Padding(0, tw(3), tw(2.5)).Children(func() {
-					if button(c, "login-items", "Open Login Items", false, false, false, p) {
+					if button(c, "login-items", tr("Open Login Items"), false, false, false, p) {
 						if err := openLoginItems(); err != nil {
-							a.fail("Couldn't open Login Items: ", err)
+							a.fail(tr("Couldn't open Login Items: "), err)
 						}
 					}
 				})
 			}
 			cardDivider(c, p)
-			a.settingToggle(c, p, "disconnect-quit", "Disconnect on Quit", "Turn off the connection when you quit Masir.", a.disconnectOnQuitEnabled(), func(on bool) {
+			a.settingToggle(c, p, "disconnect-quit", tr("Disconnect on Quit"), tr("Turn off the connection when you quit Masir."), a.disconnectOnQuitEnabled(), func(on bool) {
 				a.setDisconnectOnQuit(on)
 			})
 			cardDivider(c, p)
 			minutes := a.subInterval()
-			a.selectRow(c, p, "interval", "Refresh Subscriptions",
-				"How often masir checks each subscription for new servers.",
+			a.selectRow(c, p, "interval", tr("Refresh Subscriptions"),
+				tr("How often masir checks each subscription for new servers."),
 				strconv.Itoa(int(minutes)), intervalChoices(minutes), false, func(v string) {
 					n, err := strconv.Atoi(v)
 					if err != nil {
@@ -171,12 +185,12 @@ func gatewayChoices(current string) []choice {
 // intervalChoices is the subscription refresh interval, in minutes.
 func intervalChoices(current uint32) []choice {
 	out := []choice{
-		{"15", "Every 15 minutes"},
-		{"30", "Every 30 minutes"},
-		{"60", "Every hour"},
-		{"180", "Every 3 hours"},
-		{"720", "Every 12 hours"},
-		{"1440", "Every 24 hours"},
+		{"15", tr("Every 15 minutes")},
+		{"30", tr("Every 30 minutes")},
+		{"60", tr("Every hour")},
+		{"180", tr("Every 3 hours")},
+		{"720", tr("Every 12 hours")},
+		{"1440", tr("Every 24 hours")},
 	}
 	for _, o := range out {
 		if o.value == strconv.Itoa(int(current)) {
@@ -190,24 +204,24 @@ func intervalChoices(current uint32) []choice {
 func intervalLabel(minutes uint32) string {
 	switch {
 	case minutes == 720:
-		return "Every 12 hours"
+		return tr("Every 12 hours")
 	case minutes%1440 == 0:
-		return fmt.Sprintf("Every %d day(s)", minutes/1440)
+		return fmt.Sprintf(tr("Every %d day(s)"), minutes/1440)
 	case minutes%60 == 0:
-		return fmt.Sprintf("Every %d hour(s)", minutes/60)
+		return fmt.Sprintf(tr("Every %d hour(s)"), minutes/60)
 	default:
-		return fmt.Sprintf("Every %d minutes", minutes)
+		return fmt.Sprintf(tr("Every %d minutes"), minutes)
 	}
 }
 
 // logLevelChoices is Xray's log level, quietest first.
 func logLevelChoices() []choice {
 	return []choice{
-		{"none", "Off"},
-		{"error", "Error"},
-		{"warning", "Warning"},
-		{"info", "Info"},
-		{"debug", "Debug"},
+		{"none", tr("Off")},
+		{"error", tr("Error")},
+		{"warning", tr("Warning")},
+		{"info", tr("Info")},
+		{"debug", tr("Debug")},
 	}
 }
 
@@ -344,22 +358,22 @@ func (a *app) settingField(c *ui.Context, p palette, key, title, hint, placehold
 
 func (a *app) dnsSection(c *ui.Context, p palette) {
 	gateway := a.gateway()
-	titled(c, p, "DNS & GATEWAY", nil, func() {
+	titled(c, p, tr("DNS & GATEWAY"), nil, func() {
 		cardBox(c, p, func() {
-			a.selectRow(c, p, "gateway", "TUN Gateway",
-				"The tunnel's own address. Pick one that doesn't clash with your network.",
+			a.selectRow(c, p, "gateway", tr("TUN Gateway"),
+				tr("The tunnel's own address. Pick one that doesn't clash with your network."),
 				gateway, gatewayChoices(gateway), false, a.setGateway)
 			cardDivider(c, p)
 			doh := a.dohURL()
-			a.selectRow(c, p, "doh", "DNS over HTTPS",
-				"Resolves names for proxied traffic, through the proxy.",
+			a.selectRow(c, p, "doh", tr("DNS over HTTPS"),
+				tr("Resolves names for proxied traffic, through the proxy."),
 				doh, dohChoices(doh), false, a.setDoH)
 			cardDivider(c, p)
-			a.settingField(c, p, "dns", "Bootstrap DNS", "Plain DNS for proxy server names, sent direct. Separate addresses with commas.",
+			a.settingField(c, p, "dns", tr("Bootstrap DNS"), tr("Plain DNS for proxy server names, sent direct. Separate addresses with commas."),
 				"1.1.1.1, 8.8.8.8", &a.dns, a.saveBootstrapDNS)
 			cardDivider(c, p)
-			a.settingField(c, p, "tundns", "TUN DNS", "DNS the tunnel advertises. Leave empty to use the bootstrap DNS.",
-				"Same as bootstrap DNS", &a.tunDNS, a.saveTunDNS)
+			a.settingField(c, p, "tundns", tr("TUN DNS"), tr("DNS the tunnel advertises. Leave empty to use the bootstrap DNS."),
+				tr("Same as bootstrap DNS"), &a.tunDNS, a.saveTunDNS)
 		})
 	})
 }
@@ -370,16 +384,16 @@ const logFollowCommand = "masir logs --follow"
 
 func (a *app) loggingSection(c *ui.Context, p palette) {
 	level := a.logLevel()
-	titled(c, p, "LOGGING", nil, func() {
+	titled(c, p, tr("LOGGING"), nil, func() {
 		cardBox(c, p, func() {
-			a.selectRow(c, p, "loglevel", "Xray Log Level", "",
+			a.selectRow(c, p, "loglevel", tr("Xray Log Level"), "",
 				level, logLevelChoices(), true, a.setLogLevel)
 			cardDivider(c, p)
 			ui.Column(c.Key("follow-log")).Padding(tw(2.5), tw(3)).Gap(tw(1)).Shrink(0).Children(func() {
-				label(c, "Follow the Log", sizeSubhead, 18, 500, p.text)
-				hint := "Xray's own warnings and errors appear in the daemon's log."
+				label(c, tr("Follow the Log"), sizeSubhead, 18, 500, p.text)
+				hint := tr("Xray's own warnings and errors appear in the daemon's log.")
 				if level == "none" {
-					hint = "Nothing is logged while the level is Off."
+					hint = tr("Nothing is logged while the level is Off.")
 				}
 				label(c, hint, sizeCaption, 14.85, 400, p.muted)
 				ui.Row(c).Margin(4, 0, 0).Gap(tw(1)).AlignItems(ui.Center).Children(func() {
@@ -387,29 +401,29 @@ func (a *app) loggingSection(c *ui.Context, p palette) {
 						Background(p.subdued).Border(1, p.borderDefault).Children(func() {
 						mono(c, logFollowCommand, sizeCaption, 16, 400, p.text).SingleLine().Selectable()
 					})
-					if iconButton(c, "log-copy", iconCopy, "Copy the log command", p, iconSM, variantSubtle, 13) {
+					if iconButton(c, "log-copy", iconCopy, tr("Copy the log command"), p, iconSM, variantSubtle, 13) {
 						c.WriteClipboard(logFollowCommand)
-						a.notify("Copied " + logFollowCommand)
+						a.notify(tr("Copied ") + logFollowCommand)
 					}
-					if iconButton(c, "log-terminal", iconTerminal, "Open in Terminal", p, iconSM, variantSubtle, 13) {
+					if iconButton(c, "log-terminal", iconTerminal, tr("Open in Terminal"), p, iconSM, variantSubtle, 13) {
 						if err := openTerminalIn(logFollowCommand); err != nil {
-							a.fail("Couldn't open a terminal: ", err)
+							a.fail(tr("Couldn't open a terminal: "), err)
 						}
 					}
 				})
 				if !a.cliState().installed {
-					label(c, "Install the command line tool below to run it.", sizeCaption, 14, 400, p.degraded)
+					label(c, tr("Install the command line tool below to run it."), sizeCaption, 14, 400, p.degraded)
 				}
 			})
 			cardDivider(c, p)
 			ui.Column(c.Key("xray-config")).Padding(tw(2.5), tw(3)).Gap(tw(1)).Shrink(0).Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Justify(ui.SpaceBetween).Gap(tw(2)).Children(func() {
-					label(c, "Xray Config", sizeSubhead, 18, 500, p.text)
-					if thinButton(c, "open-config", "Open JSON", false, false, false, p) {
+					label(c, tr("Xray Config"), sizeSubhead, 18, 500, p.text)
+					if thinButton(c, "open-config", tr("Open JSON"), false, false, false, p) {
 						a.openXrayConfig()
 					}
 				})
-				label(c, "The configuration the daemon is running right now, as masir get-config prints it.",
+				label(c, tr("The configuration the daemon is running right now, as masir get-config prints it."),
 					sizeCaption, 14.85, 400, p.muted)
 			})
 		})
@@ -417,10 +431,10 @@ func (a *app) loggingSection(c *ui.Context, p palette) {
 }
 
 func (a *app) privacySection(c *ui.Context, p palette) {
-	titled(c, p, "PRIVACY", nil, func() {
+	titled(c, p, tr("PRIVACY"), nil, func() {
 		cardBox(c, p, func() {
-			a.settingToggle(c, p, "analytics", "Anonymous Analytics",
-				"Sends anonymous usage and crash data to help improve Masir. It never includes addresses, names, or the sites you visit.",
+			a.settingToggle(c, p, "analytics", tr("Anonymous Analytics"),
+				tr("Sends anonymous usage and crash data to help improve Masir. It never includes addresses, names, or the sites you visit."),
 				a.analyticsOn(), a.setAnalytics)
 		})
 	})
@@ -429,46 +443,46 @@ func (a *app) privacySection(c *ui.Context, p palette) {
 func (a *app) systemSection(c *ui.Context, p palette) {
 	st := a.status
 	cli := a.cliState()
-	titled(c, p, "SYSTEM", nil, func() {
+	titled(c, p, tr("SYSTEM"), nil, func() {
 		cardBox(c, p, func() {
 			ui.Column(c).Padding(tw(2.5), tw(3)).Gap(tw(1.5)).Shrink(0).Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Justify(ui.SpaceBetween).Children(func() {
-					label(c, "Background Service", sizeSubhead, 18, 500, p.text)
+					label(c, tr("Background Service"), sizeSubhead, 18, 500, p.text)
 					switch {
 					case st.GetServiceInstalled() && st.GetServiceRunning():
-						badge(c, "Active", nil, p.healthy, p.healthySurface, 0, 0)
+						badge(c, tr("Active"), nil, p.healthy, p.healthySurface, 0, 0)
 					case st.GetServiceInstalled() && !st.GetServiceEnabled():
-						badge(c, "Disabled", nil, p.degraded, p.degradedSurface, 0, 0)
+						badge(c, tr("Disabled"), nil, p.degraded, p.degradedSurface, 0, 0)
 					case st.GetServiceInstalled():
-						badge(c, "Stopped", nil, p.degraded, p.degradedSurface, 0, 0)
+						badge(c, tr("Stopped"), nil, p.degraded, p.degradedSurface, 0, 0)
 					case st.GetPrivileged():
-						badge(c, "This Session", nil, p.degraded, p.degradedSurface, 0, 0)
+						badge(c, tr("This Session"), nil, p.degraded, p.degradedSurface, 0, 0)
 					default:
-						badge(c, "Not Installed", nil, p.muted, p.neutralSurface, 0, 0)
+						badge(c, tr("Not Installed"), nil, p.muted, p.neutralSurface, 0, 0)
 					}
 				})
-				label(c, "Starts the daemon at boot, so connecting in tunnel mode never asks for permission again.", sizeCaption, 14.85, 400, p.muted)
+				label(c, tr("Starts the daemon at boot, so connecting in tunnel mode never asks for permission again."), sizeCaption, 14.85, 400, p.muted)
 				if st.GetServiceInstalled() && !st.GetServiceEnabled() {
-					label(c, "The system has it turned off. Allow Masir in Login Items, or start it here.", sizeCaption, 14.85, 400, p.degraded)
+					label(c, tr("The system has it turned off. Allow Masir in Login Items, or start it here."), sizeCaption, 14.85, 400, p.degraded)
 				}
 				ui.Column(c).Gap(tw(1)).Margin(4, 0, 0).Children(func() {
 					if st.GetServiceInstalled() {
 						if !st.GetServiceRunning() {
-							if thinButton(c, "service-start", "Start Service", true, a.serviceBusy, a.serviceBusy, p) {
+							if thinButton(c, "service-start", tr("Start Service"), true, a.serviceBusy, a.serviceBusy, p) {
 								a.startDaemonService()
 							}
 						}
 						if runtime.GOOS == "darwin" && !st.GetServiceEnabled() {
-							if thinButton(c, "service-login-items", "Open Login Items", false, false, false, p) {
+							if thinButton(c, "service-login-items", tr("Open Login Items"), false, false, false, p) {
 								if err := openLoginItems(); err != nil {
-									a.fail("Couldn't open Login Items: ", err)
+									a.fail(tr("Couldn't open Login Items: "), err)
 								}
 							}
 						}
-						if thinButton(c, "service-remove", "Remove Service", false, a.serviceBusy, a.serviceBusy, p) {
+						if thinButton(c, "service-remove", tr("Remove Service"), false, a.serviceBusy, a.serviceBusy, p) {
 							a.removeDaemonService()
 						}
-					} else if thinButton(c, "service-install", "Install Service", true, a.serviceBusy, a.serviceBusy, p) {
+					} else if thinButton(c, "service-install", tr("Install Service"), true, a.serviceBusy, a.serviceBusy, p) {
 						a.installDaemonService()
 					}
 				})
@@ -476,41 +490,41 @@ func (a *app) systemSection(c *ui.Context, p palette) {
 			cardDivider(c, p)
 			ui.Column(c).Padding(tw(2.5), tw(3)).Gap(tw(1.5)).Shrink(0).Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Justify(ui.SpaceBetween).Children(func() {
-					label(c, "Command Line Tool", sizeSubhead, 18, 500, p.text)
+					label(c, tr("Command Line Tool"), sizeSubhead, 18, 500, p.text)
 					if cli.installed {
-						badge(c, "Installed", nil, p.healthy, p.healthySurface, 0, 0)
+						badge(c, tr("Installed"), nil, p.healthy, p.healthySurface, 0, 0)
 					} else {
-						badge(c, "Not Installed", nil, p.muted, p.neutralSurface, 0, 0)
+						badge(c, tr("Not Installed"), nil, p.muted, p.neutralSurface, 0, 0)
 					}
 				})
 				switch {
 				case cli.installed && cli.ours:
-					label(c, "Use masir in your terminal; the app keeps this command up to date.", sizeCaption, 14.85, 400, p.muted)
+					label(c, tr("Use masir in your terminal; the app keeps this command up to date."), sizeCaption, 14.85, 400, p.muted)
 				case cli.installed:
-					label(c, "masir is already installed at "+cli.path+"; Masir leaves it unchanged.", sizeCaption, 14.85, 400, p.muted)
+					label(c, tr("masir is already installed at ")+cli.path+tr("; Masir leaves it unchanged."), sizeCaption, 14.85, 400, p.muted)
 				default:
-					label(c, "Use masir in your terminal; the app sets it up automatically.", sizeCaption, 14.85, 400, p.muted)
+					label(c, tr("Use masir in your terminal; the app sets it up automatically."), sizeCaption, 14.85, 400, p.muted)
 				}
 				if !cli.installed {
 					ui.Column(c).Gap(tw(1)).Margin(4, 0, 0).Children(func() {
-						if thinButton(c, "cli-install", "Install", true, a.cliBusy, a.cliBusy, p) {
+						if thinButton(c, "cli-install", tr("Install"), true, a.cliBusy, a.cliBusy, p) {
 							a.installCommandLine()
 						}
 					})
 				}
 				if cli.needsShell {
-					label(c, "Open a new terminal to use masir.", sizeCaption, 14, 400, p.degraded)
+					label(c, tr("Open a new terminal to use masir."), sizeCaption, 14, 400, p.degraded)
 				} else if cli.installed && cli.ours && !cli.onPath {
-					label(c, "Add "+cli.dir+" to your PATH to run it by name.", sizeCaption, 14, 400, p.degraded)
+					label(c, tr("Add ")+cli.dir+tr(" to your PATH to run it by name."), sizeCaption, 14, 400, p.degraded)
 					mono(c, cli.path, sizeMicro, 13, 400, p.muted).MaxLines(2).Selectable()
 				}
 			})
 			cardDivider(c, p)
 			ui.Column(c).Padding(tw(2.5), tw(3)).Gap(tw(1.5)).Shrink(0).Children(func() {
-				label(c, "Resets the proxy port, DNS, gateway, refresh interval and logging. Your servers, rules, power and privacy choice stay as they are.",
+				label(c, tr("Resets the proxy port, DNS, gateway, refresh interval and logging. Your servers, rules, power and privacy choice stay as they are."),
 					sizeCaption, 14.85, 400, p.muted)
 				ui.Column(c).Gap(tw(1)).Margin(4, 0, 0).Children(func() {
-					if thinButton(c, "reset-settings", "Restore Defaults", false, false, false, p) {
+					if thinButton(c, "reset-settings", tr("Restore Defaults"), false, false, false, p) {
 						a.restoreDefaults()
 					}
 				})

@@ -61,20 +61,20 @@ func (a *app) statusTextAt(now time.Time) (title, subtitle string, color ui.Colo
 		// A stopped service is the supervisor: nothing will answer until it is started,
 		// and the connect switch is the way to start it.
 		if a.busy != "" {
-			return a.busy, "Starting the background service", p.degraded, true
+			return a.busy, tr("Starting the background service"), p.degraded, true
 		}
-		return "Disconnected", "The background service is stopped", p.neutral, false
+		return tr("Disconnected"), tr("The background service is stopped"), p.neutral, false
 	case !a.reachable:
-		return "Starting…", "Waiting for the masir daemon", p.degraded, true
+		return tr("Starting…"), tr("Waiting for the masir daemon"), p.degraded, true
 	case a.busy != "":
-		return a.busy, "Starting core...", p.degraded, true
+		return a.busy, tr("Starting core..."), p.degraded, true
 	case a.connected():
 		sub := sessionClock(now.Sub(a.since))
 		if a.since.IsZero() {
 			sub = sessionClock(0)
 		}
 		if a.connection.testing {
-			return "Connected", "Checking connection…", p.healthy, false
+			return tr("Connected"), tr("Checking connection…"), p.healthy, false
 		}
 		if a.connection.checked && a.connection.identity == a.connectionIdentity() {
 			_, healthy := a.connectionMessage()
@@ -82,14 +82,14 @@ func (a *app) statusTextAt(now time.Time) (title, subtitle string, color ui.Colo
 				sub = a.connectionResult()
 			}
 			if !healthy {
-				return "Connection issue", sub, p.degraded, false
+				return tr("Connection issue"), sub, p.degraded, false
 			}
 		}
-		return "Connected", sub, p.healthy, false
+		return tr("Connected"), sub, p.healthy, false
 	case a.wantsOn():
-		return "Connecting...", "Starting core...", p.degraded, true
+		return tr("Connecting..."), tr("Starting core..."), p.degraded, true
 	}
-	return "Disconnected", "Ready to connect", p.neutral, false
+	return tr("Disconnected"), tr("Ready to connect"), p.neutral, false
 }
 
 func (a *app) header(c *ui.Context, p palette) {
@@ -107,7 +107,7 @@ func (a *app) header(c *ui.Context, p palette) {
 	connecting := pulse
 	ui.Row(c).Padding(0, tw(0.5), tw(0.5)).Gap(tw(2)).AlignItems(ui.Center).Justify(ui.SpaceBetween).Children(func() {
 		detail, _ := a.connectionMessage()
-		status := ui.ButtonBase(c.Key("test-connection")).Label("Test connection").Tooltip(detail + "\nClick to check connection").Cursor(ui.CursorPointer).Disabled(!a.reachable || a.busy != "").AlignItems(ui.Start).Gap(tw(2)).Grow(1).Basis(0).MinWidth(0)
+		status := ui.ButtonBase(c.Key("test-connection")).Label(tr("Test connection")).Tooltip(detail + tr("\nClick to check connection")).Cursor(ui.CursorPointer).Disabled(!a.reachable || a.busy != "").AlignItems(ui.Start).Gap(tw(2)).Grow(1).Basis(0).MinWidth(0)
 		status.Children(func() {
 			dot := ui.Box(c).Size(tw(2.5), tw(2.5)).Radius(tw(1.25)).Margin(tw(1.5), 0, 0).Shrink(0)
 			statusDot(c, dot, color, connecting, a.connected(), p)
@@ -131,16 +131,16 @@ func (a *app) header(c *ui.Context, p palette) {
 			a.testConnection()
 		}
 		ui.Row(c).AlignItems(ui.Center).Gap(tw(2.5)).Shrink(0).Children(func() {
-			on := a.wantsOn() && a.connected() || a.busy == "Connecting…"
+			on := a.wantsOn() && a.connected() || a.busy == tr("Connecting…")
 			// With the daemon down the server list is unknown, but connect can bring it
 			// up (starting a stopped service, or a root daemon when none is installed);
 			// only an empty list while the daemon answers keeps the switch off.
 			disabled := a.busy != "" || a.serviceBusy || (a.reachable && len(a.subscriptions.servers) == 0)
-			if next, changed := nativeSwitch(c, "power", "Connect", on, switchDefault, disabled, a.busy != "", p); changed {
+			if next, changed := nativeSwitch(c, "power", tr("Connect"), on, switchDefault, disabled, a.busy != "", p); changed {
 				a.setPower(next)
 			}
 			a.subscriptionsButton(c, p)
-			if iconButton(c, "add", iconPlus, "Add Subscription", p, iconSM, variantGhost, 18) {
+			if iconButton(c, "add", iconPlus, tr("Add Subscription"), p, iconSM, variantGhost, 18) {
 				a.openPage(addSubscriptionPath)
 			}
 		})
@@ -164,10 +164,10 @@ func (a *app) banner(c *ui.Context, p palette) {
 	}
 	ui.Row(c).Gap(tw(1.5)).Padding(tw(2.5), tw(3)).Radius(cardRadius).Background(p.errorSurface).Border(1, p.errorBorder).AlignItems(ui.Start).Children(func() {
 		ui.Column(c).Grow(1).Gap(tw(1.5)).Children(func() {
-			label(c, "Connection Failed", sizeSubhead, 16, 600, p.errorC)
+			label(c, tr("Connection Failed"), sizeSubhead, 16, 600, p.errorC)
 			mono(c, a.status.LastError, sizeCaption, 14, 400, p.text).MaxLines(4).Selectable()
 		})
-		if iconButton(c, "dismiss", iconX, "Dismiss", p, iconXS, variantGhost, 11) {
+		if iconButton(c, "dismiss", iconX, tr("Dismiss"), p, iconXS, variantGhost, 11) {
 			a.dismissed = a.status.LastError
 		}
 	})
@@ -178,12 +178,12 @@ func (a *app) emptyState(c *ui.Context, p palette) {
 		ui.Box(c).Size(tw(12), tw(12)).Radius(tw(4)).Background(p.accentSurface).Center().Children(func() {
 			ui.Icon(c, iconLayers).FontSize(24).TextColor(p.accent)
 		})
-		label(c, "No Subscriptions Added", sizeTitle, 17, 600, p.text)
-		label(c, "Add a subscription URL to import servers and configure routing rules.", sizeCaption, 15, 400, p.muted).TextAlign(ui.Center)
+		label(c, tr("No Subscriptions Added"), sizeTitle, 17, 600, p.text)
+		label(c, tr("Add a subscription URL to import servers and configure routing rules."), sizeCaption, 15, 400, p.muted).TextAlign(ui.Center)
 		btn := ui.ButtonBase(c.Key("empty-add")).Height(36).Padding(0, tw(3.5)).Radius(tw(2)).Background(p.accent).Gap(tw(1.5)).Center().Cursor(ui.CursorPointer).Margin(tw(1), 0, 0)
 		btn.Children(func() {
 			ui.Icon(c, iconPlus).FontSize(15).TextColor(ui.Hex("#ffffff"))
-			label(c, "Add Subscription", sizeBody, 18, 500, ui.Hex("#ffffff"))
+			label(c, tr("Add Subscription"), sizeBody, 18, 500, ui.Hex("#ffffff"))
 		})
 		if btn.Clicked() {
 			a.openPage(addSubscriptionPath)
@@ -199,16 +199,16 @@ func (a *app) modeSection(c *ui.Context, p palette) {
 		idx = 1
 	}
 	ui.Column(c).Gap(tw(1.5)).Children(func() {
-		if next, changed := segmented(c, "mode", []string{"Tunnel", "Direct"}, idx, p); changed {
+		if next, changed := segmented(c, "mode", []string{tr("Tunnel"), tr("Direct")}, idx, p); changed {
 			if next == 0 {
 				a.setFallback(pb.Fallback_FALLBACK_PROXY)
 			} else {
 				a.setFallback(pb.Fallback_FALLBACK_DIRECT)
 			}
 		}
-		text := "Traffic uses the tunnel unless a rule matches."
+		text := tr("Traffic uses the tunnel unless a rule matches.")
 		if idx == 1 {
-			text = "Traffic goes direct unless a rule matches."
+			text = tr("Traffic goes direct unless a rule matches.")
 		}
 		ui.Row(c).AlignItems(ui.Center).Gap(4).PaddingEnd(tw(1)).Children(func() {
 			label(c, text, sizeCaption, 15, 400, p.muted).SingleLine().Grow(1).Basis(0).MinWidth(0)
@@ -217,7 +217,7 @@ func (a *app) modeSection(c *ui.Context, p palette) {
 }
 
 func (a *app) subscriptionsButton(c *ui.Context, p palette) {
-	if iconButton(c, "manage-subscriptions", iconLayers, "Subscriptions", p, iconSM, variantGhost, 15) {
+	if iconButton(c, "manage-subscriptions", iconLayers, tr("Subscriptions"), p, iconSM, variantGhost, 15) {
 		a.subscriptionPage = subscriptionPageState{}
 		a.openPage(subscriptionsPath)
 	}
@@ -313,7 +313,7 @@ func (a *app) footer(c *ui.Context, p palette) {
 					label(c, "•", sizeMicro, 14, 400, p.quaternary)
 					a.speedLabel(c, p, "up", a.up, "↑")
 				})
-				if iconButton(c, "settings", iconSettings, "Settings", p, iconXS, variantGhost, 14) {
+				if iconButton(c, "settings", iconSettings, tr("Settings"), p, iconXS, variantGhost, 14) {
 					a.openPage(settingsPath)
 				}
 			})

@@ -26,7 +26,7 @@ func TestEmptyStateHeightFollowsContent(t *testing.T) {
 				t.Helper()
 				tt.Frame()
 				tt.Advance(time.Second)
-				footer, ok := tt.Find("Masir v0.1.0")
+				footer, ok := tt.Find("Masir Fork v0.1.0")
 				if !ok || requested < footer.Y+footer.H || abs32(requested-a.mainHeight) > 0.5 {
 					t.Fatalf("height does not fit content: requested %.1f, content %.1f, footer %v", requested, a.mainHeight, footer)
 				}

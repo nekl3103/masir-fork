@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/egoist/mygo/ui"
 	pb "github.com/Gozargah/Masir/libs/masir-proto/gen/masir/daemon/v1"
+	"github.com/egoist/mygo/ui"
 )
 
 type connectionState struct {
@@ -51,7 +51,7 @@ func (a *app) connectionWarnings(c *ui.Context, p palette) {
 func (a *app) connectionHealth(now time.Time) []string {
 	var warnings []string
 	if a.status.GetActiveStale() {
-		warnings = append(warnings, "Selected server was removed. Its saved copy is still selected; choose another server.")
+		warnings = append(warnings, tr("Selected server was removed. Its saved copy is still selected; choose another server."))
 	}
 	for _, sub := range a.subscriptions.subscriptions {
 		if sub.Id != a.status.GetActiveSubscriptionId() {
@@ -59,10 +59,10 @@ func (a *app) connectionHealth(now time.Time) []string {
 		}
 		u := sub.GetUsage()
 		if u.GetExpireAtMs() > 0 && u.ExpireAtMs <= now.UnixMilli() {
-			warnings = append(warnings, "Active subscription has expired.")
+			warnings = append(warnings, tr("Active subscription has expired."))
 		}
 		if u.GetTotalBytes() > 0 && (u.GetDownloadBytes() >= u.TotalBytes || u.GetUploadBytes() >= u.TotalBytes-u.GetDownloadBytes()) {
-			warnings = append(warnings, "Active subscription has used all its traffic.")
+			warnings = append(warnings, tr("Active subscription has used all its traffic."))
 		}
 	}
 	return warnings
@@ -72,27 +72,27 @@ func (a *app) connectionMessage() (string, bool) {
 	s := a.connection
 	switch {
 	case !a.reachable:
-		return "Waiting for daemon", false
+		return tr("Waiting for daemon"), false
 	case s.testing:
-		return "Checking…", false
+		return tr("Checking…"), false
 	case !s.checked || s.identity != a.connectionIdentity():
 		if !a.wantsOn() {
-			return "Disconnected", false
+			return tr("Disconnected"), false
 		}
-		return "Connection not checked", false
+		return tr("Connection not checked"), false
 	case s.internetOK && s.proxyOK:
-		return "Internet & proxy are working", true
+		return tr("Internet & proxy are working"), true
 	case s.internetOK && !s.proxyTested:
 		if a.connected() {
-			return "Internet works · Proxy unavailable", false
+			return tr("Internet works · Proxy unavailable"), false
 		}
-		return "Internet is working", true
+		return tr("Internet is working"), true
 	case s.internetOK:
-		return "Internet works · Proxy failed", false
+		return tr("Internet works · Proxy failed"), false
 	case s.proxyOK:
-		return "Proxy works · Internet failed", false
+		return tr("Proxy works · Internet failed"), false
 	default:
-		return "Connection check failed", false
+		return tr("Connection check failed"), false
 	}
 }
 
@@ -153,15 +153,15 @@ func localProxyProbe(st *pb.Status) string {
 }
 
 func (a *app) connectionResult() string {
-	internet := "Internet failed"
+	internet := tr("Internet failed")
 	if a.connection.internetOK {
-		internet = "Internet OK"
+		internet = tr("Internet OK")
 	}
-	proxy := "Proxy failed"
+	proxy := tr("Proxy failed")
 	if !a.connection.proxyTested {
-		proxy = "Proxy unavailable"
+		proxy = tr("Proxy unavailable")
 	} else if a.connection.proxyOK {
-		proxy = "Proxy OK"
+		proxy = tr("Proxy OK")
 	}
 	return internet + " · " + proxy
 }

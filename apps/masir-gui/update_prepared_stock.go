@@ -10,5 +10,5 @@ import (
 
 func preparedUpdateSupported() bool { return false }
 func installPreparedUpdate(context.Context, *mygo.Update, func(int64, int64), func(string) error) error {
-	return errors.New("prepared updates require the patched desktop build")
+	return errors.New(tr("prepared updates require the patched desktop build"))
 }

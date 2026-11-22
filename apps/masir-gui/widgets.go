@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"golang.org/x/text/language"
-	"golang.org/x/text/language/display"
 )
 
 // ---- text ----
@@ -223,7 +221,7 @@ func latencyBadge(c *ui.Context, key string, ms int64, testing bool, p palette) 
 	text, none := "—", false
 	switch {
 	case ms < 0:
-		text = "Timeout"
+		text = tr("Timeout")
 		fg, bg = p.errorC, p.errorSurface
 	case ms == 0:
 		none = true
@@ -243,7 +241,7 @@ func latencyBadge(c *ui.Context, key string, ms int64, testing bool, p palette) 
 			dot = p.tertiary
 		}
 	}
-	b := ui.ButtonBase(c.Key(key)).Label("Test latency").Tooltip("Click to test latency").Cursor(ui.CursorPointer).
+	b := ui.ButtonBase(c.Key(key)).Label(tr("Test latency")).Tooltip(tr("Click to test latency")).Cursor(ui.CursorPointer).
 		Shrink(0).AlignItems(ui.Center).Radius(4)
 
 	if none || (ms < 0) {
@@ -273,9 +271,9 @@ func latencyBadge(c *ui.Context, key string, ms int64, testing bool, p palette) 
 		}
 		if ms > 0 { // also while testing: the old number stays on its reels, so the result rolls from it
 			// The number rolls; its separator and unit stay still.
-			whole := strings.TrimSuffix(text, "ms")
+			whole := strings.TrimSuffix(text, tr("ms"))
 			rollingNumber(c, key+"-ms", float64(ms), whole, sizeCaption, 14, 600, fg, true)
-			mono(c, "ms", sizeCaption, 14, 600, fg)
+			mono(c, tr("ms"), sizeCaption, 14, 600, fg)
 			return
 		}
 		mono(c, text, sizeCaption, 14, 600, fg).SingleLine()
@@ -288,7 +286,7 @@ func formatMs(ms int64) string {
 	if len(s) > 3 {
 		s = s[:len(s)-3] + "," + s[len(s)-3:]
 	}
-	return s + "ms"
+	return s + tr("ms")
 }
 
 // ---- search ----
@@ -303,7 +301,7 @@ func searchInput(c *ui.Context, key string, value *string, placeholder string, p
 			in.AutoFocus()
 		}
 		if *value != "" {
-			clear := ui.ButtonBase(c.Key(key+"-clear")).Label("Clear search").Size(tw(4), tw(4)).Radius(tw(2)).Background(p.cardHover).Center().Cursor(ui.CursorPointer).Shrink(0)
+			clear := ui.ButtonBase(c.Key(key+"-clear")).Label(tr("Clear search")).Size(tw(4), tw(4)).Radius(tw(2)).Background(p.cardHover).Center().Cursor(ui.CursorPointer).Shrink(0)
 			clear.Children(func() { ui.Icon(c, iconX).FontSize(10).TextColor(p.muted) })
 			if clear.Clicked() {
 				*value = ""
@@ -351,18 +349,10 @@ func flagCode(flag string) string {
 	return ""
 }
 
-// countryOf is the English name of the country a flag emoji stands for, or "" when it
+// countryOf is the localized name of the country a flag emoji stands for, or "" when it
 // stands for none.
 func countryOf(flag string) string {
-	code := emojiCode(flag)
-	if code == "" {
-		return ""
-	}
-	region, err := language.ParseRegion(code)
-	if err != nil {
-		return ""
-	}
-	return display.English.Regions().Name(region)
+	return countryName(emojiCode(flag))
 }
 
 // serverTitle is what a server is called in the panel: its country when the name starts
@@ -383,11 +373,11 @@ func serverTitle(name string) (flag, title, detail string) {
 func speed(bps uint64) string {
 	switch {
 	case bps >= 10<<20:
-		return fmt.Sprintf("%.0fMB/s", float64(bps)/(1<<20))
+		return fmt.Sprintf(tr("%.0fMB/s"), float64(bps)/(1<<20))
 	case bps >= 1<<20:
-		return fmt.Sprintf("%.1fMB/s", float64(bps)/(1<<20))
+		return fmt.Sprintf(tr("%.1fMB/s"), float64(bps)/(1<<20))
 	default:
-		return fmt.Sprintf("%.0fKB/s", float64(bps)/1024)
+		return fmt.Sprintf(tr("%.0fKB/s"), float64(bps)/1024)
 	}
 }
 
@@ -395,10 +385,10 @@ func speed(bps uint64) string {
 func duration(d time.Duration) string {
 	switch {
 	case d < time.Minute:
-		return "Just connected"
+		return tr("Just connected")
 	case d < time.Hour:
-		return fmt.Sprintf("%dm", int(d.Minutes()))
+		return fmt.Sprintf(tr("%dm"), int(d.Minutes()))
 	default:
-		return fmt.Sprintf("%dh %dm", int(d.Hours()), int(d.Minutes())%60)
+		return fmt.Sprintf(tr("%dh %dm"), int(d.Hours()), int(d.Minutes())%60)
 	}
 }

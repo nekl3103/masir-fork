@@ -546,8 +546,8 @@ func (a *app) startDaemonUpdate() {
 			// start the service instead of quietly taking over.
 			a.post(func() {
 				a.updates.state.phase = updateFailed
-				a.updates.state.err = "the background service isn't running; start it in Settings"
-				a.notifyError("The update failed: " + a.updates.state.err)
+				a.updates.state.err = tr("the background service isn't running; start it in Settings")
+				a.notifyError(tr("The update failed: ") + a.updates.state.err)
 			})
 			return
 		}
@@ -560,7 +560,7 @@ func (a *app) startDaemonUpdate() {
 			if err != nil {
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = describe(err)
-				a.notifyError("The update failed: " + a.updates.state.err)
+				a.notifyError(tr("The update failed: ") + a.updates.state.err)
 				return
 			}
 			a.updates.state.job = res.GetJob()
@@ -589,7 +589,7 @@ func (a *app) watchDaemonUpdate() {
 				}
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = describe(err)
-				a.notifyError("The update failed: " + a.updates.state.err)
+				a.notifyError(tr("The update failed: ") + a.updates.state.err)
 			})
 			return
 		}
@@ -661,12 +661,12 @@ func (a *app) applyJob(job *pb.UpdateJob) {
 		a.updates.state.phase = updateFailed
 		a.updates.state.err = job.GetError()
 		if a.updates.state.err == "" && len(job.GetBlockedRules()) > 0 {
-			a.updates.state.err = "the new version can't build some of your rules"
+			a.updates.state.err = tr("the new version can't build some of your rules")
 		}
 		if a.updates.state.err == "" {
-			a.updates.state.err = "the update couldn't be installed"
+			a.updates.state.err = tr("the update couldn't be installed")
 		}
-		a.notifyError("The update failed: " + a.updates.state.err)
+		a.notifyError(tr("The update failed: ") + a.updates.state.err)
 	}
 }
 
@@ -699,8 +699,8 @@ func (a *app) daemonWatchEnded() {
 		return
 	}
 	a.updates.state.phase = updateFailed
-	a.updates.state.err = "lost the update while it was running"
-	a.notifyError("The update failed: " + a.updates.state.err)
+	a.updates.state.err = tr("lost the update while it was running")
+	a.notifyError(tr("The update failed: ") + a.updates.state.err)
 }
 
 // awaitDaemon waits for the restarted daemon to report the version the update installed,
@@ -710,12 +710,12 @@ func (a *app) awaitDaemon(version string) {
 		if err := a.waitForDaemon(version, daemonWaitTimeout); err != nil {
 			msg := err.Error()
 			if service.Installed() {
-				msg += "; run `masir daemon rollback` to put the previous version back"
+				msg += tr("; run `masir daemon rollback` to put the previous version back")
 			}
 			a.post(func() {
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = msg
-				a.notifyError("The update failed: " + a.updates.state.err)
+				a.notifyError(tr("The update failed: ") + a.updates.state.err)
 			})
 			return
 		}
@@ -750,12 +750,12 @@ func (a *app) waitForDaemon(version string, timeout time.Duration) error {
 		time.Sleep(500 * time.Millisecond)
 	}
 	if sawVersion {
-		return errors.New("the daemon came back without the tunnel; it will be back when masir reconnects")
+		return errors.New(tr("the daemon came back without the tunnel; it will be back when masir reconnects"))
 	}
 	if lastVersion != "" && version != "" {
-		return fmt.Errorf("the daemon did not report %s after the update; last reported version was %s", version, lastVersion)
+		return fmt.Errorf(tr("the daemon did not report %s after the update; last reported version was %s"), version, lastVersion)
 	}
-	return errors.New("the daemon didn't come back after the update")
+	return errors.New(tr("the daemon didn't come back after the update"))
 }
 
 // daemonAfterInstall handles a job that installed without restarting (an older daemon,
@@ -880,7 +880,7 @@ func (a *app) startAppUpdate() {
 			case err != nil:
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = err.Error()
-				a.notifyError("The app update failed: " + a.updates.state.err)
+				a.notifyError(tr("The app update failed: ") + a.updates.state.err)
 			default:
 				a.updates.state.phase = updateIdle
 				// A daemon that runs from the old bundle must restart into the new one
@@ -1072,7 +1072,7 @@ func (a *app) ignoreUpdate() {
 		a.post(func() {
 			a.updates.state.ignoreBusy = false
 			if err != nil {
-				a.fail("Couldn't ignore the update: ", err)
+				a.fail(tr("Couldn't ignore the update: "), err)
 				return
 			}
 			if res.GetRelease() != nil {
@@ -1114,49 +1114,49 @@ func (a *app) updatePercent() int {
 func (a *app) downloadLabel(part int) string {
 	if a.updates.state.parts < 2 {
 		if pct := a.updatePercent(); pct > 0 {
-			return fmt.Sprintf("Downloading %d%%", pct)
+			return fmt.Sprintf(tr("Downloading %d%%"), pct)
 		}
-		return "Downloading…"
+		return tr("Downloading…")
 	}
-	return fmt.Sprintf("Part %d/2 · %d%%", part, a.updatePercent())
+	return fmt.Sprintf(tr("Part %d/2 · %d%%"), part, a.updatePercent())
 }
 
 // pausedLabel is downloadLabel while the download is paused.
 func (a *app) pausedLabel(part int) string {
 	if a.updates.state.parts < 2 {
-		return fmt.Sprintf("Paused · %d%%", a.updatePercent())
+		return fmt.Sprintf(tr("Paused · %d%%"), a.updatePercent())
 	}
-	return fmt.Sprintf("Paused %d/2 · %d%%", part, a.updatePercent())
+	return fmt.Sprintf(tr("Paused %d/2 · %d%%"), part, a.updatePercent())
 }
 
 // updateTooltip says what the numbered label cannot: what each part is fetching.
 func (a *app) updateTooltip() string {
 	if a.updates.state.phase == updateAuthorizing {
-		return "Your password is needed to install the update."
+		return tr("Your password is needed to install the update.")
 	}
 	if a.updates.state.phase == updateFailed && a.updates.state.err != "" {
 		return a.updates.state.err
 	}
 	if a.updates.state.bundleOffer && a.updates.state.unitPending && !newerRelease(a.version, a.status.GetVersion()) {
-		return "Apply the background service configuration. Administrator permission is required."
+		return tr("Apply the background service configuration. Administrator permission is required.")
 	}
 	if a.updates.state.bundleOffer {
-		return "Finish the update: daemon " + a.status.GetVersion() + " to " + a.version + " from this app. Administrator permission is required; the connection will briefly restart."
+		return fmt.Sprintf(tr("Finish the update: daemon %s to %s from this app. Administrator permission is required; the connection will briefly restart."), a.status.GetVersion(), a.version)
 	}
 	if a.updates.state.bundleSync {
-		return "Updating the daemon from this app; the connection will briefly restart"
+		return tr("Updating the daemon from this app; the connection will briefly restart")
 	}
 	if a.updates.state.block == blockReadOnly && a.updates.state.phase == updateAvailable && a.packageUpdateAvailable() && !a.daemonUpdateAvailable() {
-		return "Masir can't update itself here: its folder isn't writable. Download the new version from the release page."
+		return tr("Masir can't update itself here: its folder isn't writable. Download the new version from the release page.")
 	}
 	if a.updates.state.parts < 2 {
 		return ""
 	}
 	switch a.updates.state.phase {
 	case updateDownloading, updatePaused:
-		return "Part 1 of 2: the daemon and the masir command"
+		return tr("Part 1 of 2: the daemon and the masir command")
 	case updateAppDownloading, updateAppPaused:
-		return "Part 2 of 2: the Masir app"
+		return tr("Part 2 of 2: the Masir app")
 	}
 	return ""
 }
@@ -1164,45 +1164,45 @@ func (a *app) updateTooltip() string {
 // updateLabel is the text inside the control.
 func (a *app) updateLabel() string {
 	if a.updates.state.bundleSync && a.updates.state.phase == updateInstalling {
-		return "Updating daemon..."
+		return tr("Updating daemon...")
 	}
 	if a.updates.state.phase == updateAuthorizing {
-		return "Enter Password…"
+		return tr("Enter Password…")
 	}
 	if a.updates.state.bundleOffer {
-		return "Finish Update"
+		return tr("Finish Update")
 	}
 	if a.updates.state.bundleSync && a.updates.state.phase == updateFailed {
-		return "Retry"
+		return tr("Retry")
 	}
 	switch a.updates.state.phase {
 	case updateAvailable:
-		return "New Update"
+		return tr("New Update")
 	case updateReady:
-		return "Install Update"
+		return tr("Install Update")
 	case updateStarting:
-		return "Starting..."
+		return tr("Starting...")
 	case updateDownloading:
 		return a.downloadLabel(1)
 	case updatePaused:
 		return a.pausedLabel(1)
 	case updateVerifying:
-		return "Verifying..."
+		return tr("Verifying...")
 	case updateInstalling:
-		return "Installing..."
+		return tr("Installing...")
 	case updateRestarting:
-		return "Restarting..."
+		return tr("Restarting...")
 	case updateAppDownloading:
 		return a.downloadLabel(2)
 	case updateAppPaused:
 		return a.pausedLabel(2)
 	case updateAppInstalling:
-		return "Installing..."
+		return tr("Installing...")
 	case updateFailed:
 		if a.updates.state.err != "" {
-			return "Update failed"
+			return tr("Update failed")
 		}
-		return "Update failed"
+		return tr("Update failed")
 	}
 	return ""
 }
@@ -1237,14 +1237,14 @@ func (a *app) followDaemonRestart(version string, request bool) {
 		if err := a.waitForDaemon(version, daemonWaitTimeout); err != nil {
 			msg := err.Error()
 			if service.Installed() {
-				msg += "; run `masir daemon rollback` to put the previous version back"
+				msg += tr("; run `masir daemon rollback` to put the previous version back")
 			}
 			a.post(func() {
 				a.updates.state.restarting = false
 				a.updates.state.relaunchAfterRestart = false
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = msg
-				a.notifyError("The update failed: " + a.updates.state.err)
+				a.notifyError(tr("The update failed: ") + a.updates.state.err)
 				// The package manager already replaced this app: keep running the old
 				// one and a retry can only find the new version installed.
 				if a.updates.state.pkgSync {

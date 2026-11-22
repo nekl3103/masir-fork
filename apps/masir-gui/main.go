@@ -129,21 +129,16 @@ func (s *shell) ready() {
 		log.Print("tray: ", err)
 	} else {
 		s.tray = t
-		menu := mygo.NewMenu([]*mygo.MenuItem{
-			{Label: "Open Masir", Click: func(*mygo.MenuItem, *mygo.Window) { s.show() }},
-			mygo.Separator(),
-			{Role: mygo.RoleQuit},
-		})
 		if runtime.GOOS == "linux" {
 			// AppIndicator shows the menu on a click; panels that report activation
 			// (KDE's, GNOME's with an extension) call OnClick, which opens the window.
-			s.tray.SetMenu(menu)
+			s.tray.SetMenu(s.trayMenu())
 			s.tray.OnClick(s.toggle)
 		} else {
 			s.tray.OnClick(s.toggle)
 			s.tray.OnRightClick(func() {
 				s.beforeTrayMenu()
-				s.tray.SetMenu(menu) // for this popup only, so clicks keep toggling the panel
+				s.tray.SetMenu(s.trayMenu()) // for this popup only, so clicks keep toggling the panel
 				defer s.tray.SetMenu(nil)
 				s.tray.PopUpMenu()
 			})
@@ -282,6 +277,7 @@ func main() {
 		name = n
 	}
 	mygo.App.SetName(name)
+	mygo.App.SetLanguages("en", "ru")
 	if runtime.GOOS == "darwin" {
 		// The panel is the app's only window: keep running as it closes.
 		mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
@@ -328,6 +324,13 @@ func main() {
 		a.guiSettingsFile = guiSettingsFile()
 		a.loadGUISettings()
 		s.ready()
+		mygo.App.OnLocaleChanged(func(string) {
+			a.refreshLocalizedContent()
+			if s.tray != nil && runtime.GOOS == "linux" {
+				s.tray.SetMenu(s.trayMenu())
+			}
+			s.sync()
+		})
 		a.refreshLoginState()
 		a.autoInstallCLI()
 		a.detectPackageInstall()

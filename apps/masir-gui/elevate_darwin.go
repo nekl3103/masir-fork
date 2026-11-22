@@ -20,7 +20,7 @@ import (
 // start with nothing anywhere to read.
 func elevateDaemon(bin string) error {
 	if bin == "" {
-		return fmt.Errorf("no masir executable to start the daemon from")
+		return fmt.Errorf("%s", tr("no masir executable to start the daemon from"))
 	}
 	script := fmt.Sprintf(`do shell script %s with administrator privileges`,
 		appleScriptString(fmt.Sprintf("%s daemon run --user %d >>%s 2>&1 &",
@@ -28,9 +28,9 @@ func elevateDaemon(bin string) error {
 	out, err := exec.Command("osascript", "-e", script).CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(out), "-128") { // the person cancelled the prompt
-			return fmt.Errorf("permission wasn't granted")
+			return fmt.Errorf("%s", tr("permission wasn't granted"))
 		}
-		return fmt.Errorf("permission wasn't granted: %s", strings.TrimSpace(string(out)))
+		return fmt.Errorf(tr("permission wasn't granted: %s"), strings.TrimSpace(string(out)))
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func openLoginItems() error {
 // set, is called once the script has returned successfully.
 func runAdmin(authorized func(), bin string, args ...string) error {
 	if bin == "" {
-		return fmt.Errorf("no masir executable to run as administrator")
+		return fmt.Errorf("%s", tr("no masir executable to run as administrator"))
 	}
 	argv := []string{shellQuote(bin)}
 	for _, a := range args {
@@ -78,9 +78,9 @@ func runAdmin(authorized func(), bin string, args ...string) error {
 	script := fmt.Sprintf(`do shell script %s with administrator privileges`, appleScriptString(strings.Join(argv, " ")))
 	if out, err := exec.Command("osascript", "-e", script).CombinedOutput(); err != nil {
 		if strings.Contains(string(out), "-128") { // the person cancelled the prompt
-			return &elevationError{kind: elevationCancelled, msg: "permission wasn't granted"}
+			return &elevationError{kind: elevationCancelled, msg: tr("permission wasn't granted")}
 		}
-		return fmt.Errorf("permission wasn't granted: %s", strings.TrimSpace(string(out)))
+		return fmt.Errorf(tr("permission wasn't granted: %s"), strings.TrimSpace(string(out)))
 	}
 	if authorized != nil {
 		authorized()

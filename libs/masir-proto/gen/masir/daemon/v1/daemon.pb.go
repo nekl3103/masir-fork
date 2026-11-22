@@ -1220,6 +1220,7 @@ type Settings struct {
 	XrayLogLevel       string                 `protobuf:"bytes,12,opt,name=xray_log_level,json=xrayLogLevel,proto3" json:"xray_log_level,omitempty"`                    // debug, info, warning, error, or none; default warning
 	Analytics          bool                   `protobuf:"varint,13,opt,name=analytics,proto3" json:"analytics,omitempty"`                                               // send anonymous usage/error events to PostHog
 	RulesEnabled       bool                   `protobuf:"varint,14,opt,name=rules_enabled,json=rulesEnabled,proto3" json:"rules_enabled,omitempty"`                     // false runs without the user's rules; each rule keeps its own disabled flag
+	KillSwitch         *bool                  `protobuf:"varint,15,opt,name=kill_switch,json=killSwitch,proto3,oneof" json:"kill_switch,omitempty"`                     // block VPN routes when their outbound is unavailable
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1348,6 +1349,13 @@ func (x *Settings) GetAnalytics() bool {
 func (x *Settings) GetRulesEnabled() bool {
 	if x != nil {
 		return x.RulesEnabled
+	}
+	return false
+}
+
+func (x *Settings) GetKillSwitch() bool {
+	if x != nil && x.KillSwitch != nil {
+		return *x.KillSwitch
 	}
 	return false
 }
@@ -1499,6 +1507,7 @@ type UpdateSettingsRequest struct {
 	XrayLogLevel       *string                `protobuf:"bytes,9,opt,name=xray_log_level,json=xrayLogLevel,proto3,oneof" json:"xray_log_level,omitempty"`                    // debug, info, warning, error, or none
 	Analytics          *bool                  `protobuf:"varint,10,opt,name=analytics,proto3,oneof" json:"analytics,omitempty"`                                              // anonymous usage/error events
 	RulesEnabled       *bool                  `protobuf:"varint,11,opt,name=rules_enabled,json=rulesEnabled,proto3,oneof" json:"rules_enabled,omitempty"`                    // false runs without the user's rules, keeping them saved
+	KillSwitch         *bool                  `protobuf:"varint,12,opt,name=kill_switch,json=killSwitch,proto3,oneof" json:"kill_switch,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1606,6 +1615,13 @@ func (x *UpdateSettingsRequest) GetAnalytics() bool {
 func (x *UpdateSettingsRequest) GetRulesEnabled() bool {
 	if x != nil && x.RulesEnabled != nil {
 		return *x.RulesEnabled
+	}
+	return false
+}
+
+func (x *UpdateSettingsRequest) GetKillSwitch() bool {
+	if x != nil && x.KillSwitch != nil {
+		return *x.KillSwitch
 	}
 	return false
 }
@@ -6790,7 +6806,7 @@ const file_masir_daemon_v1_daemon_proto_rawDesc = "" +
 	"\x0fShutdownRequest\"\x12\n" +
 	"\x10ShutdownResponse\"\x10\n" +
 	"\x0eRestartRequest\"\x11\n" +
-	"\x0fRestartResponse\"\xdc\x03\n" +
+	"\x0fRestartResponse\"\x92\x04\n" +
 	"\bSettings\x12\x14\n" +
 	"\x05power\x18\x01 \x01(\bR\x05power\x12\x10\n" +
 	"\x03tun\x18\x02 \x01(\bR\x03tun\x12&\n" +
@@ -6809,14 +6825,17 @@ const file_masir_daemon_v1_daemon_proto_rawDesc = "" +
 	"\x14sub_interval_minutes\x18\v \x01(\rR\x12subIntervalMinutes\x12$\n" +
 	"\x0exray_log_level\x18\f \x01(\tR\fxrayLogLevel\x12\x1c\n" +
 	"\tanalytics\x18\r \x01(\bR\tanalytics\x12#\n" +
-	"\rrules_enabled\x18\x0e \x01(\bR\frulesEnabled\"\x14\n" +
+	"\rrules_enabled\x18\x0e \x01(\bR\frulesEnabled\x12$\n" +
+	"\vkill_switch\x18\x0f \x01(\bH\x00R\n" +
+	"killSwitch\x88\x01\x01B\x0e\n" +
+	"\f_kill_switch\"\x14\n" +
 	"\x12GetSettingsRequest\"\x83\x01\n" +
 	"\x13GetSettingsResponse\x125\n" +
 	"\bsettings\x18\x01 \x01(\v2\x19.masir.daemon.v1.SettingsR\bsettings\x125\n" +
 	"\bdefaults\x18\x02 \x01(\v2\x19.masir.daemon.v1.SettingsR\bdefaults\"$\n" +
 	"\n" +
 	"StringList\x12\x16\n" +
-	"\x06values\x18\x01 \x03(\tR\x06values\"\x8a\x05\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"\xc0\x05\n" +
 	"\x15UpdateSettingsRequest\x12+\n" +
 	"\x0falways_on_proxy\x18\x01 \x01(\bH\x00R\ralwaysOnProxy\x88\x01\x01\x12 \n" +
 	"\tallow_lan\x18\x02 \x01(\bH\x01R\ballowLan\x88\x01\x01\x12\"\n" +
@@ -6832,7 +6851,9 @@ const file_masir_daemon_v1_daemon_proto_rawDesc = "" +
 	"\x0exray_log_level\x18\t \x01(\tH\x06R\fxrayLogLevel\x88\x01\x01\x12!\n" +
 	"\tanalytics\x18\n" +
 	" \x01(\bH\aR\tanalytics\x88\x01\x01\x12(\n" +
-	"\rrules_enabled\x18\v \x01(\bH\bR\frulesEnabled\x88\x01\x01B\x12\n" +
+	"\rrules_enabled\x18\v \x01(\bH\bR\frulesEnabled\x88\x01\x01\x12$\n" +
+	"\vkill_switch\x18\f \x01(\bH\tR\n" +
+	"killSwitch\x88\x01\x01B\x12\n" +
 	"\x10_always_on_proxyB\f\n" +
 	"\n" +
 	"_allow_lanB\r\n" +
@@ -6844,7 +6865,8 @@ const file_masir_daemon_v1_daemon_proto_rawDesc = "" +
 	"\x0f_xray_log_levelB\f\n" +
 	"\n" +
 	"_analyticsB\x10\n" +
-	"\x0e_rules_enabled\"O\n" +
+	"\x0e_rules_enabledB\x0e\n" +
+	"\f_kill_switch\"O\n" +
 	"\x16UpdateSettingsResponse\x125\n" +
 	"\bsettings\x18\x01 \x01(\v2\x19.masir.daemon.v1.SettingsR\bsettings\"!\n" +
 	"\x0fSetPowerRequest\x12\x0e\n" +
@@ -7544,6 +7566,7 @@ func file_masir_daemon_v1_daemon_proto_init() {
 	if File_masir_daemon_v1_daemon_proto != nil {
 		return
 	}
+	file_masir_daemon_v1_daemon_proto_msgTypes[15].OneofWrappers = []any{}
 	file_masir_daemon_v1_daemon_proto_msgTypes[19].OneofWrappers = []any{}
 	file_masir_daemon_v1_daemon_proto_msgTypes[52].OneofWrappers = []any{}
 	file_masir_daemon_v1_daemon_proto_msgTypes[85].OneofWrappers = []any{}

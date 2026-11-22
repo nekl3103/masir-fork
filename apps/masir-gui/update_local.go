@@ -117,7 +117,7 @@ func (a *app) startBundledDaemonUpdate() {
 			if err != nil {
 				a.updates.state.phase = updateFailed
 				a.updates.state.err = describe(err)
-				a.notifyError("Couldn't update the daemon: " + a.updates.state.err)
+				a.notifyError(tr("Couldn't update the daemon: ") + a.updates.state.err)
 				return
 			}
 			if unitPending {

@@ -16,7 +16,7 @@ func TestCenteredPageHeadersHaveBalancedVerticalSpacing(t *testing.T) {
 		{"details", subscriptionDetailsPath, "Subscription", "marzban", 0},
 		{"edit", editSubscriptionPath, "Edit Subscription", "NAME", 1 + 10},
 		{"add", addSubscriptionPath, "Add Subscription", "LABEL (OPTIONAL)", 1 + tw(2.5)},
-		{"settings", settingsPath, "Settings", "ADVANCED", 0},
+		{"settings", settingsPath, "Settings", "LANGUAGE", 1 + tw(2.5)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			a := newTestApp(ukServers())

@@ -191,7 +191,7 @@ func shellReadsPath(dir string) bool {
 // A command that is not the app's is left alone, and so is one that is already there.
 func installCLI(bin string) (cliStatus, error) {
 	if bin == "" || !executable(bin) {
-		return cliStatus{}, errors.New("the app ships no masir executable to install")
+		return cliStatus{}, errors.New(tr("the app ships no masir executable to install"))
 	}
 	dir, err := cliBinDir()
 	if err != nil {
@@ -214,7 +214,7 @@ func installCLI(bin string) (cliStatus, error) {
 					return cliStatus{}, err
 				}
 			case !fileExists(link):
-				return cliStatus{}, fmt.Errorf("%s is a broken link to another program; remove it first", link)
+				return cliStatus{}, fmt.Errorf(tr("%s is a broken link to another program; remove it first"), link)
 			default:
 				// Another masir, or a working link to another copy: leave it be.
 				return cliStatusNow(bin), nil
@@ -271,13 +271,13 @@ func removeCLI(bin string) error {
 	link := filepath.Join(dir, cliCommand())
 	if target, err := os.Readlink(link); err == nil {
 		if !samePath(target, bin) && !ourLinkTarget(target) {
-			return fmt.Errorf("%s links another masir; leaving it alone", link)
+			return fmt.Errorf(tr("%s links another masir; leaving it alone"), link)
 		}
 		if err := os.Remove(link); err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	} else if fileExists(link) {
-		return fmt.Errorf("%s is another program; leaving it alone", link)
+		return fmt.Errorf(tr("%s is another program; leaving it alone"), link)
 	}
 	removePathBlocks()
 	return nil

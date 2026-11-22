@@ -52,11 +52,11 @@ func (a *app) contextMenu(c *ui.Context, p palette) {
 		in := m.AnimateWith("in", 1, 100*time.Millisecond, easeApp)
 		m.Opacity(in).Scale(0.95+0.05*in, 0.95+0.05*in)
 		m.Children(func() {
-			toggle := "Disable Rule"
+			toggle := tr("Disable Rule")
 			if rule.Disabled {
-				toggle = "Enable Rule"
+				toggle = tr("Enable Rule")
 			}
-			if a.menuItem(c, p, "edit", "Edit Rule", iconPencil, false) {
+			if a.menuItem(c, p, "edit", tr("Edit Rule"), iconPencil, false) {
 				a.menu.open = false
 				a.editRule(rule)
 			}
@@ -65,9 +65,9 @@ func (a *app) contextMenu(c *ui.Context, p palette) {
 				a.setRuleEnabled(rule.RuleTag, rule.Disabled)
 			}
 			ui.Box(c).Height(0.5).Background(p.borderSubtle).Margin(tw(0.5), tw(1))
-			removeTitle := "Remove Rule"
+			removeTitle := tr("Remove Rule")
 			if a.menu.confirmRemove {
-				removeTitle = "Remove"
+				removeTitle = tr("Remove")
 			}
 			if a.menuItem(c, p, "remove", removeTitle, iconTrash, true) {
 				if a.menu.confirmRemove {

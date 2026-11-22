@@ -364,7 +364,7 @@ func TestRefreshListsIgnoresOlderCompletion(t *testing.T) {
 func TestMainPanelShowsTheServerAndRules(t *testing.T) {
 	a := newTestApp(ukServers())
 	tt := tester(a)
-	for _, want := range []string{"Disconnected", "Ready to connect", "Tunnel", "Direct", "Traffic uses the tunnel unless a rule matches.", ltr("United Kingdom"), ltr("marzban • England"), "2,048", "ms", "RULES", "rules", "Masir v0.1.0"} {
+	for _, want := range []string{"Disconnected", "Ready to connect", "Tunnel", "Direct", "Traffic uses the tunnel unless a rule matches.", ltr("United Kingdom"), ltr("marzban • England"), "2,048", "ms", "RULES", "rules", "Masir Fork v0.1.0"} {
 		if !tt.HasText(want) {
 			t.Errorf("no %q in %q", want, tt.Texts())
 		}
@@ -579,13 +579,13 @@ func TestRulesListKeepsItsHeightWhenSearching(t *testing.T) {
 	if a.ruleListH <= 0 {
 		t.Fatalf("the open rules list was not measured: %v", a.ruleListH)
 	}
-	before, ok := tt.Find("Masir v0.1.0")
+	before, ok := tt.Find("Masir Fork v0.1.0")
 	if !ok {
 		t.Fatalf("no footer: %q", tt.Texts())
 	}
 	tt.Type("no-such-rule")
 	tt.Frame()
-	after, ok := tt.Find("Masir v0.1.0")
+	after, ok := tt.Find("Masir Fork v0.1.0")
 	if !ok {
 		t.Fatalf("no footer after searching: %q", tt.Texts())
 	}

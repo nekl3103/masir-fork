@@ -225,6 +225,7 @@ message Settings {
   string xray_log_level = 12;       // debug, info, warning, error, or none; default warning
   bool analytics = 13;              // send anonymous usage/error events to PostHog
   bool rules_enabled = 14;          // false runs without the user's rules; each rule keeps its own disabled flag
+  optional bool kill_switch = 15;   // block VPN routes when their outbound is unavailable
 }
 
 message GetSettingsRequest {}
@@ -249,6 +250,7 @@ message UpdateSettingsRequest {
   optional string xray_log_level = 9;       // debug, info, warning, error, or none
   optional bool analytics = 10;             // anonymous usage/error events
   optional bool rules_enabled = 11;         // false runs without the user's rules, keeping them saved
+  optional bool kill_switch = 12;
 }
 message UpdateSettingsResponse { Settings settings = 1; }
 

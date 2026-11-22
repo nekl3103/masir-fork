@@ -286,7 +286,7 @@ func TestShutdownWaitsForAnApplyThatPassedItsCheck(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("shutdown did not finish after the apply released its lock")
 	}
-	if err := s.applyXray(context.Background(), nil); err == nil {
+	if err := s.applyXray(context.Background(), nil, ""); err == nil {
 		t.Fatal("an apply after the final Close was accepted")
 	}
 	if s.xray.Running() {

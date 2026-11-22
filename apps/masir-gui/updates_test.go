@@ -45,7 +45,7 @@ func TestIgnoringAnUpdateHidesTheButton(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Advance(time.Second)
-	if !tt.HasText("Masir v0.1.0") || tt.HasText("New Update") {
+	if !tt.HasText("Masir Fork v0.1.0") || tt.HasText("New Update") {
 		t.Fatalf("after ignoring: %q", tt.Texts())
 	}
 	if !f.called("ignore v0.2.0") {

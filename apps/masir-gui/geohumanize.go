@@ -22,8 +22,12 @@ var geoBrands = map[string]string{
 	"spotify": "Spotify", "telegram": "Telegram", "twitter": "X (Twitter)",
 }
 
-// countryName returns the English name of a two-letter country code.
+// countryName returns the localized name of a two-letter country code.
 func countryName(code string) string {
+	return countryNameIn(code, appLanguage())
+}
+
+func countryNameIn(code, lang string) string {
 	code = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(code), "!"))
 	if code == "uk" {
 		code = "gb"
@@ -35,7 +39,11 @@ func countryName(code string) string {
 	if err != nil {
 		return ""
 	}
-	name := display.English.Regions().Name(region)
+	names := display.English.Regions()
+	if lang == "ru" {
+		names = display.Russian.Regions()
+	}
+	name := names.Name(region)
 	if name == "" {
 		return ""
 	}
@@ -53,29 +61,29 @@ func formatTopic(topic string) string {
 	}
 	switch tLower {
 	case "bank":
-		return "Banks"
+		return tr("Banks")
 	case "game":
-		return "Games"
+		return tr("Games")
 	case "shop", "shopping":
-		return "Shopping"
+		return tr("Shopping")
 	case "news":
-		return "News"
+		return tr("News")
 	case "scholar":
-		return "Scholar"
+		return tr("Scholar")
 	case "finance":
-		return "Finance"
+		return tr("Finance")
 	case "ads", "advertisement":
-		return "Ads"
+		return tr("Ads")
 	case "porn":
-		return "Porn websites"
+		return tr("Porn websites")
 	case "forum":
-		return "Forums"
+		return tr("Forums")
 	case "video":
-		return "Video"
+		return tr("Video")
 	case "music":
-		return "Music"
+		return tr("Music")
 	case "social":
-		return "Social"
+		return tr("Social")
 	default:
 		parts := strings.Split(topic, "-")
 		for i, p := range parts {
@@ -103,29 +111,29 @@ func humanizeGeosite(code string) (title string, flag string, icon *ui.SVG, ok b
 	// 1. Special geosite entries
 	switch raw {
 	case "category-ads-all":
-		return "Ads & Trackers", "", iconGlobe, true
+		return tr("Ads & Trackers"), "", iconGlobe, true
 	case "category-ads":
-		return "Ads", "", iconGlobe, true
+		return tr("Ads"), "", iconGlobe, true
 	case "category-porn":
-		return "Porn Websites", "", iconGlobe, true
+		return tr("Porn Websites"), "", iconGlobe, true
 	case "gfw":
-		return "Blocked in China (GFW)", "", iconGlobe, true
+		return tr("Blocked in China (GFW)"), "", iconGlobe, true
 	case "greatfire":
-		return "Blocked in China (GreatFire)", "", iconGlobe, true
+		return tr("Blocked in China (GreatFire)"), "", iconGlobe, true
 	case "win-update":
-		return "Windows Update", "", iconGlobe, true
+		return tr("Windows Update"), "", iconGlobe, true
 	case "win-spy":
-		return "Windows Telemetry", "", iconGlobe, true
+		return tr("Windows Telemetry"), "", iconGlobe, true
 	case "win-extra":
-		return "Windows Extras", "", iconGlobe, true
+		return tr("Windows Extras"), "", iconGlobe, true
 	case "private":
-		return "Local Network Names", "", iconGlobe, true
+		return tr("Local Network Names"), "", iconGlobe, true
 	}
 
 	// 2. Direct country code: e.g. "ir", "cn", "us"
 	if len(raw) == 2 || raw == "uk" {
 		if cName := countryName(raw); cName != "" {
-			return cName + " Websites", flagFor(raw), iconGlobe, true
+			return cName + tr(" Websites"), flagFor(raw), iconGlobe, true
 		}
 	}
 
@@ -134,11 +142,11 @@ func humanizeGeosite(code string) (title string, flag string, icon *ui.SVG, ok b
 		countryPart := strings.TrimPrefix(raw, "geolocation-")
 		if strings.HasPrefix(countryPart, "!") {
 			if cName := countryName(countryPart); cName != "" {
-				return "Websites (Excluding " + cName + ")", "", iconGlobe, true
+				return tr("Websites (Excluding ") + cName + ")", "", iconGlobe, true
 			}
 		} else {
 			if cName := countryName(countryPart); cName != "" {
-				return "Websites In " + cName, flagFor(countryPart), iconGlobe, true
+				return tr("Websites In ") + cName, flagFor(countryPart), iconGlobe, true
 			}
 		}
 	}
@@ -149,7 +157,7 @@ func humanizeGeosite(code string) (title string, flag string, icon *ui.SVG, ok b
 
 		// 4a. Direct country category: category-ir, category-ru, category-cn
 		if cName := countryName(rest); cName != "" {
-			return cName + " Websites", flagFor(rest), iconGlobe, true
+			return cName + tr(" Websites"), flagFor(rest), iconGlobe, true
 		}
 
 		// 4b. Negated country suffix: category-<topic>-!<country> (e.g. category-ai-!cn, category-scholar-!cn)
@@ -157,7 +165,7 @@ func humanizeGeosite(code string) (title string, flag string, icon *ui.SVG, ok b
 			topicPart, countryPart, _ := strings.Cut(rest, "-!")
 			if cName := countryName(countryPart); cName != "" {
 				topic := formatTopic(topicPart)
-				return topic + " (Excluding " + cName + ")", "", iconGlobe, true
+				return topic + tr(" (Excluding ") + cName + ")", "", iconGlobe, true
 			}
 		}
 
@@ -184,10 +192,10 @@ func humanizeGeosite(code string) (title string, flag string, icon *ui.SVG, ok b
 		if strings.HasPrefix(countryPart, "!") {
 			if cName := countryName(countryPart); cName != "" {
 				if brand, ok := geoBrands[strings.ToLower(prefix)]; ok {
-					return brand + " (Excluding " + cName + ")", "", iconGlobe, true
+					return brand + tr(" (Excluding ") + cName + ")", "", iconGlobe, true
 				}
 				if acr, ok := geoAcronyms[strings.ToLower(prefix)]; ok {
-					return acr + " (Excluding " + cName + ")", "", iconGlobe, true
+					return acr + tr(" (Excluding ") + cName + ")", "", iconGlobe, true
 				}
 			}
 		} else {
@@ -216,21 +224,21 @@ func humanizeGeoIP(code string) (title string, flag string, icon *ui.SVG, ok boo
 	// Special IP identifiers
 	switch strings.ToLower(raw) {
 	case "private":
-		return "Private IPs", "", iconLayers, true
+		return tr("Private IPs"), "", iconLayers, true
 	case "telegram":
-		return "Telegram Servers", "", iconLayers, true
+		return tr("Telegram Servers"), "", iconLayers, true
 	case "twitter":
 		return "X (Twitter)", "", iconLayers, true
 	case "cloudfront":
 		return "Amazon CloudFront", "", iconLayers, true
 	case "tor":
-		return "Tor Relays", "", iconLayers, true
+		return tr("Tor Relays"), "", iconLayers, true
 	}
 
 	// Negated country IP: e.g. !cn
 	if strings.HasPrefix(raw, "!") {
 		if cName := countryName(raw); cName != "" {
-			return "IPs (Excluding " + cName + ")", "", iconLayers, true
+			return tr("IPs (Excluding ") + cName + ")", "", iconLayers, true
 		}
 	}
 

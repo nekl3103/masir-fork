@@ -18,7 +18,7 @@ import (
 // Not a service: it lasts until it stops or Windows restarts; Settings installs the service.
 func elevateDaemon(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to start the daemon from")
+		return errors.New(tr("no masir executable to start the daemon from"))
 	}
 	u, err := user.Current()
 	if err != nil {
@@ -29,9 +29,9 @@ func elevateDaemon(bin string) error {
 	params, _ := windows.UTF16PtrFromString("daemon run --user " + windows.EscapeArg(u.Uid))
 	if err := windows.ShellExecute(0, verb, file, params, nil, windows.SW_HIDE); err != nil {
 		if errors.Is(err, windows.ERROR_CANCELLED) {
-			return errors.New("permission wasn't granted")
+			return errors.New(tr("permission wasn't granted"))
 		}
-		return fmt.Errorf("run as Administrator: %w", err)
+		return fmt.Errorf(tr("run as Administrator: %w"), err)
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ func elevateDaemon(bin string) error {
 // on. masir asks for the permission itself, and waits for the outcome.
 func installService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to install the service from")
+		return errors.New(tr("no masir executable to install the service from"))
 	}
 	return runDaemonCommand(bin, "enable")
 }
@@ -49,7 +49,7 @@ func installService(bin string) error {
 // when masir needs it.
 func uninstallService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to remove the service with")
+		return errors.New(tr("no masir executable to remove the service with"))
 	}
 	return runDaemonCommand(bin, "disable")
 }
@@ -58,7 +58,7 @@ func uninstallService(bin string) error {
 // daemon of its own while a service is installed.
 func startService(bin string) error {
 	if bin == "" {
-		return errors.New("no masir executable to start the service with")
+		return errors.New(tr("no masir executable to start the service with"))
 	}
 	return runDaemonCommand(bin, "restart")
 }
@@ -76,7 +76,7 @@ func runDaemonCommand(bin, cmd string) error {
 		if msg == "" {
 			msg = err.Error()
 		}
-		return fmt.Errorf("couldn't %s the service: %s", map[string]string{"enable": "install", "disable": "remove", "restart": "start"}[cmd], msg)
+		return fmt.Errorf(tr("couldn't %s the service: %s"), map[string]string{"enable": "install", "disable": "remove", "restart": "start"}[cmd], msg)
 	}
 	return nil
 }

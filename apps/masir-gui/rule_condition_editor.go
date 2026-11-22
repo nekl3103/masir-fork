@@ -18,14 +18,14 @@ func (a *app) ruleConditionEditor(c *ui.Context, p palette, d ruleCondition) {
 		case "udp":
 			index = 2
 		}
-		if ruleSegments(c, "network", &index, p, "Any", "TCP", "UDP") {
+		if ruleSegments(c, "network", &index, p, tr("Any"), "TCP", "UDP") {
 			st.values[d.key] = []string{"", "tcp", "udp"}[index]
 		}
-		label(c, "Any includes both TCP and UDP traffic.", sizeMicro, 15, 400, p.muted)
+		label(c, tr("Any includes both TCP and UDP traffic."), sizeMicro, 15, 400, p.muted)
 	case "protocol":
-		label(c, "Match one or more detected protocols. Requires protocol sniffing.", sizeMicro, 15, 400, p.muted)
+		label(c, tr("Match one or more detected protocols. Requires protocol sniffing."), sizeMicro, 15, 400, p.muted)
 		t := c.Theme()
-		ui.Row(c).Label("Application protocols").Padding(t.Space(0.5)).Gap(t.Space(0.5)).Radius(t.Radius).Background(ruleFieldColor(p)).Border(1, t.Border).Shrink(0).Children(func() {
+		ui.Row(c).Label(tr("Application protocols")).Padding(t.Space(0.5)).Gap(t.Space(0.5)).Radius(t.Radius).Background(ruleFieldColor(p)).Border(1, t.Border).Shrink(0).Children(func() {
 			for _, value := range []string{"http", "tls", "quic", "bittorrent"} {
 				entries := ruleEntries(d.key, st.values[d.key])
 				selected := slices.Contains(entries, value)
@@ -53,26 +53,26 @@ func (a *app) ruleConditionEditor(c *ui.Context, p palette, d ruleCondition) {
 		})
 	case "port", "sourcePort":
 		value := st.values[d.key]
-		labeledInput(c, p, "ports", "Ports or ranges", &value, "80, 443, 1000-2000", iconHash, p.muted, inputHeight, nil).AutoFocus()
+		labeledInput(c, p, "ports", tr("Ports or ranges"), &value, "80, 443, 1000-2000", iconHash, p.muted, inputHeight, nil).AutoFocus()
 		st.values[d.key] = value
-		label(c, "Separate ports and ranges with commas.", sizeMicro, 15, 400, p.muted)
+		label(c, tr("Separate ports and ranges with commas."), sizeMicro, 15, 400, p.muted)
 	case "process":
 		a.ruleAppsEditor(c, p)
 	case "domain":
 		ui.Column(c).Padding(10, 10, 0).Children(func() {
-			ruleSegments(c, "domain-mode", &st.domainMode, p, "Category", "Domain")
+			ruleSegments(c, "domain-mode", &st.domainMode, p, tr("Category"), tr("Domain"))
 		})
 		if st.domainMode == 0 {
 			a.ruleGeoEditor(c, p, d)
 		} else {
 			ui.Column(c).Padding(0, 10, 10).Gap(8).Children(func() {
-				label(c, "Domains include subdomains. Use full:example.com for an exact hostname, or regexp: for a regular expression.", sizeMicro, 15, 400, p.muted)
-				a.ruleEntryEditor(c, p, d, "Domain or pattern", "example.com, full:www.example.org")
+				label(c, tr("Domains include subdomains. Use full:example.com for an exact hostname, or regexp: for a regular expression."), sizeMicro, 15, 400, p.muted)
+				a.ruleEntryEditor(c, p, d, tr("Domain or pattern"), "example.com, full:www.example.org")
 			})
 		}
 	case "ip":
 		ui.Column(c).Padding(10, 10, 0).Children(func() {
-			ruleSegments(c, "ip-mode", &st.ipMode, p, "GeoIP", "Manual")
+			ruleSegments(c, "ip-mode", &st.ipMode, p, "GeoIP", tr("Manual"))
 		})
 		if st.ipMode == 0 {
 			a.ruleGeoEditor(c, p, d)
@@ -85,7 +85,7 @@ func (a *app) ruleConditionEditor(c *ui.Context, p palette, d ruleCondition) {
 
 	if d.key != "process" && len(ruleEntries(d.key, st.values[d.key])) > 0 {
 		reset := func() {
-			if ui.Button(c.Key("any-"+d.key), "Reset to Any").Disabled(st.busy).Clicked() {
+			if ui.Button(c.Key("any-"+d.key), tr("Reset to Any")).Disabled(st.busy).Clicked() {
 				st.values[d.key] = ""
 				st.err = ""
 			}
@@ -110,17 +110,17 @@ func (a *app) ruleIPInput(c *ui.Context, p palette, d ruleCondition) {
 	}
 	value := strings.Join(manual, ", ")
 	before := value
-	labeledInput(c, p, d.key+"-ranges", "IP addresses or ranges", &value, "1.1.1.1, 10.0.0.0/8", d.icon, p.muted, inputHeight, nil).AutoFocus()
+	labeledInput(c, p, d.key+"-ranges", tr("IP addresses or ranges"), &value, "1.1.1.1, 10.0.0.0/8", d.icon, p.muted, inputHeight, nil).AutoFocus()
 	if value != before {
 		a.rulePage.values[d.key] = strings.Join(append(categories, value), "\n")
 	}
-	label(c, "Separate addresses and CIDR ranges with commas.", sizeMicro, 15, 400, p.muted)
+	label(c, tr("Separate addresses and CIDR ranges with commas."), sizeMicro, 15, 400, p.muted)
 }
 
 func (a *app) ruleEntryEditor(c *ui.Context, p palette, d ruleCondition, title, placeholder string) {
 	st := &a.rulePage
 	submitted := labeledInput(c, p, "condition-entry", title, &st.entry, placeholder, d.icon, p.muted, inputHeight, nil).AutoFocus().Submitted()
-	if ui.Button(c.Key("add-entry"), "Add").Disabled(st.busy || strings.TrimSpace(st.entry) == "").Clicked() || submitted {
+	if ui.Button(c.Key("add-entry"), tr("Add")).Disabled(st.busy || strings.TrimSpace(st.entry) == "").Clicked() || submitted {
 		a.addRuleConditionEntry(d.key)
 	}
 	a.ruleConditionEntries(c, p, d)
@@ -164,7 +164,7 @@ func (a *app) ruleConditionEntries(c *ui.Context, p palette, d ruleCondition) {
 		value := entries[i]
 		ui.Row(c.Key(value)).Padding(5, 6).Gap(5).AlignItems(ui.Center).Children(func() {
 			label(c, value, sizeCaption, 16, 400, p.text).Grow(1).Basis(0).MinWidth(0).SingleLine()
-			if ui.Button(c.Key("remove-entry"), "Remove").Label("Remove " + value).Clicked() {
+			if ui.Button(c.Key("remove-entry"), tr("Remove")).Label(tr("Remove ") + value).Clicked() {
 				var next []string
 				for _, v := range ruleEntries(d.key, st.values[d.key]) {
 					if v != value {
@@ -174,7 +174,7 @@ func (a *app) ruleConditionEntries(c *ui.Context, p palette, d ruleCondition) {
 				st.values[d.key] = strings.Join(next, "\n")
 			}
 		})
-	})).Label(d.title + " entries").Height(min(136, float32(len(entries))*40)).Shrink(0).Radius(6).Background(p.subdued)
+	})).Label(tr(d.title) + tr(" entries")).Height(min(136, float32(len(entries))*40)).Shrink(0).Radius(6).Background(p.subdued)
 }
 
 // Use the same translucent card, recessed content and control surfaces as
@@ -221,17 +221,17 @@ func ruleSegments(c *ui.Context, key string, selected *int, p palette, options .
 	groupName := key
 	switch key {
 	case "app-scope":
-		groupName = "Application source"
+		groupName = tr("Application source")
 	case "ip-mode":
-		groupName = "IP address source"
+		groupName = tr("IP address source")
 	case "domain-mode":
-		groupName = "Domain matching mode"
+		groupName = tr("Domain matching mode")
 	case "geo-scope":
-		groupName = "Website list source"
+		groupName = tr("Website list source")
 	case "network":
-		groupName = "Network type"
+		groupName = tr("Network type")
 	case "destination-kind":
-		groupName = "Destination"
+		groupName = tr("Destination")
 	}
 	parts.Track.Label(groupName).Padding(t.Space(0.5)).Gap(t.Space(0.5)).Radius(t.Radius).Background(ruleFieldColor(p)).Border(1, t.Border).Shrink(0).Children(func() {
 		for i, title := range options {

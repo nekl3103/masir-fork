@@ -11,6 +11,7 @@ import (
 
 type ruleGeoOption struct {
 	code, title, titleKey, flag, search, count string
+	entries                                    uint32
 }
 
 type ruleGeoState struct {
@@ -19,6 +20,7 @@ type ruleGeoState struct {
 	selected                         map[string]bool
 	query, lastQuery, lastMatch, err string
 	loading, loaded, dirty           bool
+	localeJob                        uint64
 	list                             ui.ListState
 }
 
@@ -32,14 +34,14 @@ func geoWebsiteTitle(code string) (string, string) {
 
 func geoWebsiteOption(code string, count uint32) ruleGeoOption {
 	title, flag := geoWebsiteTitle(code)
-	v := ruleGeoOption{code: code, title: title, flag: flag}
+	v := ruleGeoOption{code: code, title: title, flag: flag, entries: count}
 	v.titleKey = strings.ToLower(title)
 	v.search = strings.ToLower(title + " " + code + " geosite:" + code)
 	if count > 0 {
 		if count > 1 {
-			v.count = fmt.Sprintf("%d domains", count)
+			v.count = fmt.Sprintf(tr("%d domains"), count)
 		} else {
-			v.count = "1 domain"
+			v.count = tr("1 domain")
 		}
 	}
 	return v
@@ -54,9 +56,9 @@ type ruleGeoCatalog struct {
 
 func geoCatalog(key string) ruleGeoCatalog {
 	if key == "ip" {
-		return ruleGeoCatalog{"ip", "geoip:", "GeoIP list", "GeoIP lists", "Search country or GeoIP category…", pb.GeoKind_GEO_KIND_IP}
+		return ruleGeoCatalog{"ip", "geoip:", tr("GeoIP list"), tr("GeoIP lists"), tr("Search country or GeoIP category…"), pb.GeoKind_GEO_KIND_IP}
 	}
-	return ruleGeoCatalog{"domain", "geosite:", "Website list", "website lists", "Search category or website…", pb.GeoKind_GEO_KIND_SITE}
+	return ruleGeoCatalog{"domain", "geosite:", tr("Website list"), tr("website lists"), tr("Search category or website…"), pb.GeoKind_GEO_KIND_SITE}
 }
 
 func (a *app) geoState(key string) *ruleGeoState {
@@ -74,12 +76,12 @@ func geoCatalogOption(key, code string, count uint32) ruleGeoOption {
 	if !ok {
 		title = formatTopic(code)
 	}
-	v := ruleGeoOption{code: code, title: title, flag: flag, titleKey: strings.ToLower(title)}
+	v := ruleGeoOption{code: code, title: title, flag: flag, entries: count, titleKey: strings.ToLower(title)}
 	v.search = strings.ToLower(title + " " + code + " geoip:" + code)
 	if count == 1 {
-		v.count = "1 range"
+		v.count = tr("1 range")
 	} else if count > 1 {
-		v.count = fmt.Sprintf("%d ranges", count)
+		v.count = fmt.Sprintf(tr("%d ranges"), count)
 	}
 	return v
 }
@@ -104,6 +106,7 @@ func (a *app) loadRuleGeoFor(key string) {
 	}
 	st.loading, st.err = true, ""
 	d := a.d
+	lang := appLanguage()
 	a.async(func() {
 		ctx, cancel := rpc()
 		defer cancel()
@@ -119,20 +122,50 @@ func (a *app) loadRuleGeoFor(key string) {
 				known[code] = true
 				all = append(all, geoCatalogOption(key, code, cat.Entries))
 			}
-			slices.SortFunc(all, func(a, b ruleGeoOption) int {
-				if title := strings.Compare(a.titleKey, b.titleKey); title != 0 {
-					return title
-				}
-				return strings.Compare(a.code, b.code)
-			})
+			sortGeoOptions(all)
 		}
 		a.post(func() {
 			st.loading = false
 			if err != nil {
-				st.err = "Couldn't load " + catalog.noun + ". Try refreshing the list."
+				st.err = tr("Couldn't load ") + catalog.noun + tr(". Try refreshing the list.")
 				return
 			}
+			st.localeJob++
 			st.all, st.known, st.loaded, st.dirty = all, known, true, true
+			if lang != appLanguage() {
+				a.localizeRuleGeo(key)
+			}
+		})
+	})
+}
+
+func sortGeoOptions(options []ruleGeoOption) {
+	slices.SortFunc(options, func(a, b ruleGeoOption) int {
+		if title := strings.Compare(a.titleKey, b.titleKey); title != 0 {
+			return title
+		}
+		return strings.Compare(a.code, b.code)
+	})
+}
+
+func (a *app) localizeRuleGeo(key string) {
+	st := a.geoState(key)
+	st.localeJob++
+	job, source := st.localeJob, st.all
+	st.dirty = true
+	if len(source) == 0 {
+		return
+	}
+	a.async(func() {
+		localized := make([]ruleGeoOption, len(source))
+		for i, option := range source {
+			localized[i] = geoCatalogOption(key, option.code, option.entries)
+		}
+		sortGeoOptions(localized)
+		a.post(func() {
+			if st.localeJob == job {
+				st.all, st.dirty = localized, true
+			}
 		})
 	})
 }
@@ -195,33 +228,33 @@ func (a *app) ruleGeoEditor(c *ui.Context, p palette, d ruleCondition) {
 	catalog := geoCatalog(d.key)
 	st := a.geoState(d.key)
 	panelBar(c, p, func() { searchInput(c, "geo-search", &st.query, catalog.search, p) }, func() {
-		if iconButton(c, "retry-geo", iconRefresh, "Refresh "+catalog.noun, p, iconMD, variantSubtle, 12) && !st.loading {
+		if iconButton(c, "retry-geo", iconRefresh, tr("Refresh ")+catalog.noun, p, iconMD, variantSubtle, 12) && !st.loading {
 			a.loadRuleGeoFor(d.key)
 		}
 	})
 	a.filterRuleGeoFor(d.key)
-	ui.Column(c).Label(catalog.title + " results").Height(208).Shrink(0).Children(func() {
+	ui.Column(c).Label(catalog.title + tr(" results")).Height(208).Shrink(0).Children(func() {
 		if len(st.filtered) > 0 {
-			containListScroll(ui.List(c, &st.list, len(st.filtered), func(i int) { a.ruleGeoRow(c, p, d.key, st.filtered[i]) })).Label(catalog.title+" choices").Grow(1).Basis(0).MinHeight(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
+			containListScroll(ui.List(c, &st.list, len(st.filtered), func(i int) { a.ruleGeoRow(c, p, d.key, st.filtered[i]) })).Label(catalog.title+tr(" choices")).Grow(1).Basis(0).MinHeight(0).Padding(4, 6).Gap(3).ScrollbarInsets(0, 1, 0)
 			return
 		}
 		ui.Column(c).Grow(1).Padding(12).Gap(6).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-			message := "No " + catalog.noun + " installed. Update geo data in Settings."
+			message := tr("No ") + catalog.noun + tr(" installed. Update geo data in Settings.")
 			switch {
 			case st.loading && !st.loaded:
 				ui.Spinner(c).Size(14, 14)
-				message = "Loading " + catalog.noun + "…"
+				message = tr("Loading ") + catalog.noun + "…"
 			case st.err != "":
 				message = st.err
 			case st.query != "":
-				message = "No matching " + catalog.noun + "."
+				message = tr("No matching ") + catalog.noun + "."
 			}
 			label(c, message, sizeCaption, 16, 400, p.muted).TextAlign(ui.Center)
 		})
 	})
 	ui.Row(c).Padding(6, 10).Gap(6).Justify(ui.SpaceBetween).Children(func() {
-		label(c, fmt.Sprintf("%d selected", len(st.selected)), sizeMicro, 15, 400, p.muted)
-		label(c, fmt.Sprintf("%d lists", len(st.all)), sizeMicro, 15, 400, p.tertiary)
+		label(c, fmt.Sprintf(tr("%d selected"), len(st.selected)), sizeMicro, 15, 400, p.muted)
+		label(c, fmt.Sprintf(tr("%d lists"), len(st.all)), sizeMicro, 15, 400, p.tertiary)
 	})
 	if st.err != "" && len(st.filtered) > 0 {
 		label(c, st.err, sizeCaption, 16, 400, p.errorC).Padding(0, 10, 8)
@@ -232,7 +265,7 @@ func (a *app) ruleGeoRow(c *ui.Context, p palette, key string, v ruleGeoOption) 
 	catalog := geoCatalog(key)
 	st := a.geoState(key)
 	selected := st.selected[v.code]
-	row := ui.ToggleBase(c.Key(v.code), &selected).Label("Select "+strings.ToLower(catalog.title)+" "+v.code).Disabled(a.rulePage.busy).Padding(6).Gap(8).Radius(6).AlignItems(ui.Center).Border(1, ui.Transparent).Cursor(ui.CursorPointer)
+	row := ui.ToggleBase(c.Key(v.code), &selected).Label(tr("Select ")+strings.ToLower(catalog.title)+" "+v.code).Disabled(a.rulePage.busy).Padding(6).Gap(8).Radius(6).AlignItems(ui.Center).Border(1, ui.Transparent).Cursor(ui.CursorPointer)
 	if selected {
 		row.Background(p.accentSurface).Border(1, p.borderFocus)
 	} else if row.Hovered() {
@@ -257,7 +290,7 @@ func (a *app) ruleGeoRow(c *ui.Context, p palette, key string, v ruleGeoOption) 
 			})
 			code := catalog.prefix + v.code
 			if st.loaded && !st.known[v.code] {
-				code += " · Not installed"
+				code += tr(" · Not installed")
 			}
 			label(c, code, sizeMicro, 14, 400, p.muted).SingleLine()
 		})
