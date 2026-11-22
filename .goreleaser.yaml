@@ -72,6 +72,17 @@ release:
   # checks every link below before the release leaves draft, so a name that drifts from
   # what was uploaded cannot reach the page.
   header: |
+    ## Download all files for your platform
+
+    Each ZIP includes the available installers, portable builds and CLI for that platform. The Android ZIP contains the signed APK.
+
+    | Platform | All files |
+    |---|---|
+    | **macOS** (Apple Silicon and Intel) | [Download ZIP](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-all-macos-{{ .Version }}.zip) |
+    | **Windows** (x64 and ARM64) | [Download ZIP](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-all-windows-{{ .Version }}.zip) |
+    | **Linux** (x64 and ARM64) | [Download ZIP](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-all-linux-{{ .Version }}.zip) |
+    | **Android** (ARM64 and x86-64) | [Download ZIP](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-all-android-{{ .Version }}.zip) · [APK](https://github.com/nekl3103/masir-fork/releases/download/{{ .Tag }}/masir-android-{{ .Version }}.apk) |
+
     ## Download Masir GUI
 
     Desktop updates reuse the app's verified payload to update the background service,

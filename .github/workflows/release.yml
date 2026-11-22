@@ -250,15 +250,63 @@ jobs:
           [ -n "$ok" ] || { echo "::error::the desktop checksums don't verify with MASIR_UPDATE_PUBKEY"; exit 1; }
           gh release upload "$GITHUB_REF_NAME" checksums-desktop.txt checksums-desktop.txt.minisig --clobber
 
+  android:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.work
+          cache-dependency-path: "**/go.sum"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK components
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+      - name: Build the signed Android APK
+        env:
+          KEYSTORE_B64: ${{ secrets.MASIR_ANDROID_KEYSTORE_B64 }}
+          MASIR_ANDROID_KEY_PASSWORD: ${{ secrets.MASIR_ANDROID_KEY_PASSWORD }}
+          MASIR_ANDROID_KEY_ALIAS: masir-release
+        run: |
+          set -eu
+          : "${KEYSTORE_B64:?Missing Android release keystore secret}"
+          : "${MASIR_ANDROID_KEY_PASSWORD:?Missing Android release keystore password}"
+          export MASIR_ANDROID_STORE_PASSWORD="$MASIR_ANDROID_KEY_PASSWORD"
+          export ANDROID_VERSION="${GITHUB_REF_NAME#v}"
+          umask 077
+          MASIR_ANDROID_KEYSTORE=$(mktemp "$RUNNER_TEMP/android-signing.XXXXXX")
+          export MASIR_ANDROID_KEYSTORE
+          trap 'rm -f "$MASIR_ANDROID_KEYSTORE"' EXIT
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$MASIR_ANDROID_KEYSTORE"
+          unset KEYSTORE_B64
+          make android
+      - name: Upload Android
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" "dist/android/masir-android-${GITHUB_REF_NAME#v}.apk" --clobber
+
   publish:
     # A release stays a draft until the command line, every system's app and the desktop
     # checksums are in it. Failed app builds leave it unpublished instead of shipping a
     # release that is missing a platform; re-run the failed job, then this one.
-    needs: [release, gui, desktop-checksums]
+    needs: [release, gui, android, desktop-checksums]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+      - name: Bundle all downloads by platform
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --dir "$RUNNER_TEMP/release-assets" \
+            --pattern 'masir-cli-*' --pattern 'masir-desktop-*' --pattern 'masir-android-*.apk' \
+            --pattern 'update-*' --pattern 'checksums*'
+          python3 scripts/release-bundles.py "${GITHUB_REF_NAME#v}" "$RUNNER_TEMP/release-assets" "$RUNNER_TEMP/bundles"
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/bundles/"*.zip --clobber
       - name: Every download the notes link exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
